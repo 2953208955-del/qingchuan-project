@@ -4,10 +4,11 @@ export interface EvidenceIndex {
   evidence: Map<string, EvidenceRef>
   metrics: ReportDraft['metrics']
   citations: Set<string>
+  counts: Set<number>
 }
 
 export interface VerifyIssue {
-  type: 'missing_evidence' | 'unknown_evidence' | 'metric_mismatch' | 'unknown_citation' | 'empty_claims'
+  type: 'missing_evidence' | 'unknown_evidence' | 'metric_mismatch' | 'unknown_citation' | 'empty_claims' | 'number_mismatch'
   message: string
   claimId?: string
 }
@@ -35,7 +36,19 @@ export function buildEvidenceIndex(input: {
     label: `严重度 ${input.metrics.severity} / 强度 ${input.metrics.intensity}`,
   })
   const citations = new Set(input.clauses.map(c => `${c.standardNo}#${c.clauseNo}`))
-  return { evidence, metrics: input.metrics, citations }
+
+  const counts = new Set<number>([input.metrics.imageCount, input.metrics.detectionCount])
+  const byCategory = new Map<string, number>()
+  const byImage = new Map<string, number>()
+  for (const d of input.detections) {
+    if (d.reviewStatus === 'rejected') continue
+    byCategory.set(d.category, (byCategory.get(d.category) ?? 0) + 1)
+    byImage.set(d.imageId, (byImage.get(d.imageId) ?? 0) + 1)
+  }
+  for (const n of byCategory.values()) counts.add(n)
+  for (const n of byImage.values()) counts.add(n)
+
+  return { evidence, metrics: input.metrics, citations, counts }
 }
 
 const sameMetrics = (a: ReportDraft['metrics'], b: ReportDraft['metrics']) =>
@@ -60,6 +73,12 @@ export function verifyReport(report: ReportDraft, index: EvidenceIndex): { passe
     for (const id of claim.evidenceIds) {
       if (!index.evidence.has(id)) {
         issues.push({ type: 'unknown_evidence', message: `证据 ${id} 不存在`, claimId: claim.id })
+      }
+    }
+    for (const match of claim.text.matchAll(/(\d+)\s*(个|处|张|件|次)/g)) {
+      const value = Number(match[1])
+      if (!index.counts.has(value)) {
+        issues.push({ type: 'number_mismatch', message: `结论中的数字 ${value} 不在代码计算结果中`, claimId: claim.id })
       }
     }
   }

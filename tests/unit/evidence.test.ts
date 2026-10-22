@@ -51,4 +51,51 @@ describe('evidence verifier', () => {
     const result = verifyReport(report({ citations: [{ standardNo: '不存在', clauseNo: '第9条' }] }), index)
     expect(result.issues.map(i => i.type)).toContain('unknown_citation')
   })
+
+  it('fails when a claim prose count is not an allowed computed count', () => {
+    const index = buildEvidenceIndex({ detections, clauses, metrics })
+    const result = verifyReport(report({
+      claims: [{ id: 'claim1', section: 'summary', text: '发现 5 个塑料瓶', evidenceIds: ['detection:d1'] }],
+    }), index)
+    expect(result.passed).toBe(false)
+    expect(result.issues.map(i => i.type)).toContain('number_mismatch')
+  })
+
+  it('passes when claim prose counts are allowed computed counts', () => {
+    const index = buildEvidenceIndex({ detections, clauses, metrics })
+    const result = verifyReport(report({
+      claims: [{ id: 'claim1', section: 'summary', text: '在 1 张图片中发现 1 个塑料瓶', evidenceIds: ['detection:d1'] }],
+    }), index)
+    expect(result.passed).toBe(true)
+  })
+
+  it('does not flag decimals, percentages, dates or numbers without count units', () => {
+    const index = buildEvidenceIndex({ detections, clauses, metrics })
+    const result = verifyReport(report({
+      claims: [{
+        id: 'claim1', section: 'summary',
+        text: '置信度 0.9，占比 90%，日期 2026-10-22，编号 42',
+        evidenceIds: ['detection:d1'],
+      }],
+    }), index)
+    expect(result.issues.map(i => i.type)).not.toContain('number_mismatch')
+  })
+
+  it('fails when a claim has no evidence ids', () => {
+    const index = buildEvidenceIndex({ detections, clauses, metrics })
+    const draft = report({
+      claims: [{ id: 'claim1', section: 'summary', text: '发现 1 个塑料瓶', evidenceIds: [] }],
+    }) as ReportDraft
+    const result = verifyReport(draft, index)
+    expect(result.passed).toBe(false)
+    expect(result.issues.map(i => i.type)).toContain('missing_evidence')
+  })
+
+  it('fails when there are no claims', () => {
+    const index = buildEvidenceIndex({ detections, clauses, metrics })
+    const draft = report({ claims: [] }) as ReportDraft
+    const result = verifyReport(draft, index)
+    expect(result.passed).toBe(false)
+    expect(result.issues.map(i => i.type)).toContain('empty_claims')
+  })
 })
