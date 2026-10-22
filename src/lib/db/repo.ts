@@ -27,7 +27,17 @@ export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'statu
   db.update(runs).set({ ...patch, updatedAt: Date.now() }).where(eq(runs.id, id)).run()
 }
 
-export function addImage(db: Db, input: { id: string; runId: string; filename: string; path: string; sha256: string; status: string }) {
+export function addImage(db: Db, input: {
+  id: string
+  runId: string
+  filename: string
+  path: string
+  sha256: string
+  status: string
+  width?: number | null
+  height?: number | null
+  exifJson?: string | null
+}) {
   db.insert(images).values(input).run()
   return input
 }
@@ -36,7 +46,13 @@ export function listImages(db: Db, runId: string) {
   return db.select().from(images).where(eq(images.runId, runId)).all()
 }
 
-export function updateImage(db: Db, id: string, patch: { status?: string; hint?: string }) {
+export function updateImage(db: Db, id: string, patch: {
+  status?: string
+  hint?: string
+  width?: number | null
+  height?: number | null
+  exifJson?: string | null
+}) {
   db.update(images).set(patch).where(eq(images.id, id)).run()
 }
 
