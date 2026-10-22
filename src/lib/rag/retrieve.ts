@@ -80,14 +80,23 @@ export async function retrieveClauses(
   minScore = 0.25,
 ): Promise<{ clauses: Clause[]; noEvidence: boolean }> {
   const [embedding] = await deps.embedder.embed([expandQuery(query)])
-  let hits = searchChunks(deps.db, embedding, query, 20)
+  // Filter by category before truncating the pre-rerank pool: an eligible
+  // clause must not be dropped just because many irrelevant categories rank higher.
+  let hits = searchChunks(deps.db, embedding, query, Number.MAX_SAFE_INTEGER)
     .filter(h => categories.length === 0 || h.categoryTags.some(t => categories.includes(t as DebrisCategory)))
+    .slice(0, 20)
 
   if (deps.reranker && hits.length > 0) {
-    const ranked = await deps.reranker.rerank(query, hits.map(h => h.content), Math.min(10, hits.length))
-    hits = ranked
-      .filter(r => hits[r.index])
-      .map(r => ({ ...hits[r.index], score: r.score }))
+    try {
+      const ranked = await deps.reranker.rerank(query, hits.map(h => h.content), Math.min(10, hits.length))
+      if (ranked.length === 0) return { clauses: [], noEvidence: true }
+      hits = ranked
+        .filter(r => hits[r.index])
+        .map(r => ({ ...hits[r.index], score: r.score }))
+        .sort((a, b) => b.score - a.score)
+    } catch {
+      // Reranker outage (HTTP/network): fall back to the hybrid hits.
+    }
   }
 
   const kept = hits.filter(h => h.score >= minScore).slice(0, topK)

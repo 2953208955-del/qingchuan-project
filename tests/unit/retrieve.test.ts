@@ -15,6 +15,30 @@ function dbWithChunks() {
   return db
 }
 
+function dbWithCategoryOutliers() {
+  const db = createDb(':memory:')
+  migrate(db, { migrationsFolder: path.resolve('drizzle') })
+  const noise = Array.from({ length: 21 }, (_, i) => ({
+    id: `noise-${i}`,
+    documentId: 'd',
+    standardNo: 'SOP',
+    clauseNo: `第${i + 10}条`,
+    title: '噪声',
+    content: `无关内容${i}`,
+    categoryTags: '["metal"]',
+    embeddingJson: '[1,0,0]',
+  }))
+  db.insert(clauses).values([
+    ...noise,
+    {
+      id: 'in-category', documentId: 'd', standardNo: 'SOP', clauseNo: '第99条',
+      title: '类别', content: '塑料瓶属于塑料类',
+      categoryTags: '["plastic_bottle"]', embeddingJson: '[0,1,0]',
+    },
+  ]).run()
+  return db
+}
+
 const fakeEmbedder = { embed: async () => [[1, 0, 0]] }
 
 describe('retrieval', () => {
@@ -49,5 +73,53 @@ describe('retrieval', () => {
     const result = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', [], 5, 0.5)
     expect(result.noEvidence).toBe(false)
     expect(result.clauses[0].id).toBe('c1')
+  })
+
+  it('applies reranker indices and sorts by score', async () => {
+    const db = dbWithChunks()
+    const reranker = {
+      rerank: async () => [
+        { index: 0, score: 0.4 },
+        { index: 1, score: 0.99 },
+      ],
+    }
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder, reranker }, '塑料瓶', [], 5, 0.3)
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(c => c.id)).toEqual(['c2', 'c1'])
+    expect(result.clauses.map(c => c.score)).toEqual([0.99, 0.4])
+  })
+
+  it('fails closed when the reranker returns no results', async () => {
+    const db = dbWithChunks()
+    const reranker = { rerank: async () => [] }
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder, reranker }, '塑料瓶', [], 5, 0.1)
+    expect(result.noEvidence).toBe(true)
+    expect(result.clauses).toEqual([])
+  })
+
+  it('falls back to hybrid hits when the reranker throws', async () => {
+    const db = dbWithChunks()
+    const reranker = {
+      rerank: async () => {
+        throw new Error('reranker offline')
+      },
+    }
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder, reranker }, '塑料瓶', [], 5, 0.5)
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(c => c.id)).toEqual(['c1'])
+  })
+
+  it('returns only clauses matching the requested categories', async () => {
+    const db = dbWithChunks()
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', ['plastic_bottle'], 5, 0.1)
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(c => c.id)).toEqual(['c1'])
+  })
+
+  it('filters categories before truncating the candidate pool', async () => {
+    const db = dbWithCategoryOutliers()
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', ['plastic_bottle'], 5, 0.1)
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(c => c.id)).toEqual(['in-category'])
   })
 })
