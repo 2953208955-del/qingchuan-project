@@ -33,6 +33,8 @@ export class BudgetTracker {
   private spentCny = 0
   constructor(private readonly capCny: number) {}
 
+  // 超限抛错即终止本次运行：spent 已包含被拒绝的费用，调用方必须立即中止，
+  // 不得继续调用 add；后续调用仍会抛错（"恰好达到上限"与"超额"不可区分）。
   add(costCny: number) {
     this.spentCny += costCny
     if (this.spentCny > this.capCny) throw new BudgetExceededError()

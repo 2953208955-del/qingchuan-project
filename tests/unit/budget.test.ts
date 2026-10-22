@@ -18,4 +18,12 @@ describe('budget', () => {
     const b = new BudgetTracker(0.5)
     expect(() => b.add(0.6)).toThrow(BudgetExceededError)
   })
+
+  it('keeps the rejected cost after throwing and still rejects later adds', () => {
+    const b = new BudgetTracker(0.5)
+    expect(() => b.add(0.6)).toThrow(BudgetExceededError)
+    expect(b.spent).toBeCloseTo(0.6)
+    expect(b.remaining).toBe(0)
+    expect(() => b.add(0)).toThrow(BudgetExceededError)
+  })
 })
