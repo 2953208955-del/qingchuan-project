@@ -26,6 +26,32 @@ describe('computeSeverity', () => {
     expect(r.overall).toBe('high')
   })
 
+  it('treats an exact 5.0 intensity as high despite floating-point accumulation', () => {
+    // 3 * 1.5 + 5 * 1.1 = 10 exactly; accumulated as binary floats this order
+    // yields 9.999999999999998, i.e. intensity 4.999999999999999 at imageCount 2.
+    const detections = [
+      ...Array.from({ length: 3 }, () => det('fishing_gear')),
+      ...Array.from({ length: 5 }, () => det('glass')),
+    ]
+    const r = computeSeverity(detections, 2)
+    expect(r.weightedTotal).toBeCloseTo(10)
+    expect(r.intensity).toBe(5)
+    expect(r.overall).toBe('high')
+  })
+
+  it('treats an exact 2.0 intensity as medium despite floating-point accumulation', () => {
+    // Hazard-free ordering of 5 * 1.2 + 4 * 1.0 = 10 exactly; accumulated in
+    // this order it yields 9.999999999999998, i.e. intensity 1.9999999999999998.
+    const categories: Detection['category'][] = [
+      'plastic_bottle', 'plastic_bottle', 'paper', 'plastic_bottle', 'paper',
+      'paper', 'paper', 'plastic_bottle', 'plastic_bottle',
+    ]
+    const r = computeSeverity(categories.map(c => det(c)), 5)
+    expect(r.weightedTotal).toBeCloseTo(10)
+    expect(r.intensity).toBe(2)
+    expect(r.overall).toBe('medium')
+  })
+
   it('excludes natural debris and rejected detections', () => {
     const r = computeSeverity([det('natural'), det('plastic_bag', 0.9, 'rejected')], 1)
     expect(r.weightedTotal).toBe(0)
