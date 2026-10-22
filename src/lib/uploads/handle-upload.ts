@@ -1,0 +1,1 @@
+export { handleUpload } from './image'
