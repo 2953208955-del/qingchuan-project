@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
-import { extractJson, generateJson, JsonParseError } from '@/lib/ai/generate-json'
+import {
+  extractJson,
+  generateJson,
+  JsonParseError,
+  JsonSchemaError,
+} from '@/lib/ai/generate-json'
 
 function mockModel(text: string) {
   return new MockLanguageModelV3({
@@ -31,8 +36,24 @@ describe('extractJson', () => {
     expect(extractJson('```JSON\n{"x":"y"}\n```')).toEqual({ x: 'y' })
   })
 
+  it('ignores a trailing brace in prose after the json object', () => {
+    expect(extractJson('{"a":1}\n注意：}')).toEqual({ a: 1 })
+  })
+
+  it('does not terminate on braces or escaped quotes inside strings', () => {
+    expect(extractJson('{"a":"} { \\"x\\"","b":2} trailing }')).toEqual({ a: '} { "x"', b: 2 })
+  })
+
   it('throws JsonParseError when no object is present', () => {
     expect(() => extractJson('没有 JSON')).toThrow(JsonParseError)
+  })
+
+  it('throws JsonParseError on malformed json', () => {
+    expect(() => extractJson('{"a": }')).toThrow(JsonParseError)
+  })
+
+  it('throws JsonParseError on an unterminated object', () => {
+    expect(() => extractJson('{"a":1')).toThrow(JsonParseError)
   })
 })
 
@@ -52,7 +73,7 @@ describe('generateJson', () => {
     expect(result.raw).toBe(raw)
   })
 
-  it('throws JsonParseError when output violates the schema', async () => {
+  it('throws JsonSchemaError when output violates the schema', async () => {
     await expect(
       generateJson({
         model: mockModel('{"count":"two"}'),
@@ -60,6 +81,38 @@ describe('generateJson', () => {
         system: 'system',
         prompt: 'prompt',
       }),
+    ).rejects.toThrow(JsonSchemaError)
+  })
+
+  it('uses a schema-mismatch message distinct from the parse error', async () => {
+    await expect(
+      generateJson({
+        model: mockModel('{"count":"two"}'),
+        schema,
+        system: 'system',
+        prompt: 'prompt',
+      }),
+    ).rejects.toThrow(/结构/)
+  })
+
+  it('throws JsonParseError when output is malformed json', async () => {
+    await expect(
+      generateJson({
+        model: mockModel('{"count": }'),
+        schema,
+        system: 'system',
+        prompt: 'prompt',
+      }),
     ).rejects.toThrow(JsonParseError)
+  })
+
+  it('parses json followed by prose containing a closing brace', async () => {
+    const result = await generateJson({
+      model: mockModel('{"count":3}\n注意：}'),
+      schema,
+      system: 'system',
+      prompt: 'prompt',
+    })
+    expect(result.value).toEqual({ count: 3 })
   })
 })

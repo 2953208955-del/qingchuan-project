@@ -8,12 +8,54 @@ export class JsonParseError extends Error {
   }
 }
 
+export class JsonSchemaError extends Error {
+  constructor(public readonly raw: string) {
+    super('模型输出 JSON 与预期结构不匹配')
+    this.name = 'JsonSchemaError'
+  }
+}
+
+/** Scans one balanced top-level object starting at `start`, respecting JSON strings and escapes. */
+function scanObject(text: string, start: number): string | null {
+  let depth = 0
+  let inString = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (inString) {
+      if (ch === '\\') {
+        i++
+      } else if (ch === '"') {
+        inString = false
+      }
+      continue
+    }
+    if (ch === '"') {
+      inString = true
+    } else if (ch === '{') {
+      depth++
+    } else if (ch === '}') {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
 export function extractJson(text: string): unknown {
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```/g, '').trim()
-  const start = cleaned.indexOf('{')
-  const end = cleaned.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) throw new JsonParseError(text)
-  return JSON.parse(cleaned.slice(start, end + 1))
+  let start = cleaned.indexOf('{')
+  while (start !== -1) {
+    const candidate = scanObject(cleaned, start)
+    if (candidate !== null) {
+      try {
+        return JSON.parse(candidate)
+      } catch {
+        // Not this candidate; keep scanning for the next top-level object.
+      }
+    }
+    start = cleaned.indexOf('{', start + 1)
+  }
+  throw new JsonParseError(text)
 }
 
 export async function generateJson<T>(opts: {
@@ -30,7 +72,7 @@ export async function generateJson<T>(opts: {
     temperature: opts.temperature ?? 0.1,
   })
   const parsed = opts.schema.safeParse(extractJson(result.text))
-  if (!parsed.success) throw new JsonParseError(result.text)
+  if (!parsed.success) throw new JsonSchemaError(result.text)
   return {
     value: parsed.data,
     usage: {
