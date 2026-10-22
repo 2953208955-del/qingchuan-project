@@ -55,6 +55,14 @@ describe('extractJson', () => {
   it('throws JsonParseError on an unterminated object', () => {
     expect(() => extractJson('{"a":1')).toThrow(JsonParseError)
   })
+
+  it('throws JsonParseError instead of returning a valid nested object', () => {
+    expect(() => extractJson('{"outer":{"count":2} oops}')).toThrow(JsonParseError)
+  })
+
+  it('throws JsonParseError instead of skipping a malformed object for a later one', () => {
+    expect(() => extractJson('{"broken": }\n{"a":1}')).toThrow(JsonParseError)
+  })
 })
 
 describe('generateJson', () => {

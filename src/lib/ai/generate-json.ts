@@ -50,7 +50,9 @@ export function extractJson(text: string): unknown {
       try {
         return JSON.parse(candidate)
       } catch {
-        // Not this candidate; keep scanning for the next top-level object.
+        // The first balanced top-level object is malformed: do not fall back
+        // to nested or later objects.
+        throw new JsonParseError(text)
       }
     }
     start = cleaned.indexOf('{', start + 1)
