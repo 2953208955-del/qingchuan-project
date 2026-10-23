@@ -15,6 +15,7 @@
     "db:push": "drizzle-kit push",
     "ingest": "tsx scripts/ingest-knowledge.ts",
     "seed": "tsx scripts/seed-demo.ts",
+    "mcp": "tsx scripts/run-mcp.ts",
     "eval:detection": "tsx scripts/eval-detection.ts",
     "eval:rag": "tsx scripts/eval-rag.ts",
     "eval:agent": "tsx scripts/eval-agent.ts"

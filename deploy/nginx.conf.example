@@ -1,0 +1,49 @@
+# 清川 Nginx 反向代理示例。
+# 1. 替换 your-domain.example.com；
+# 2. 复制到 /etc/nginx/sites-available/qingchuan 并软链到 sites-enabled；
+# 3. nginx -t && systemctl reload nginx；
+# 4. 用 certbot --nginx -d your-domain.example.com 申请证书（certbot 会自动改为 443）。
+server {
+  listen 80;
+  server_name your-domain.example.com;
+
+  # 单张图片上限 15MB，预留 multipart 开销。
+  client_max_body_size 20m;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    # 让应用的限流器看到真实客户端 IP（取 X-Forwarded-For 第一跳）。
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # SSE 分析流（最长 300s）：关闭缓冲，否则事件会被 Nginx 攒住。
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+  }
+}
+
+# TLS 由 certbot 自动生成，形如：
+# server {
+#   listen 443 ssl;
+#   server_name your-domain.example.com;
+#   ssl_certificate     /etc/letsencrypt/live/your-domain.example.com/fullchain.pem;
+#   ssl_certificate_key /etc/letsencrypt/live/your-domain.example.com/privkey.pem;
+#   client_max_body_size 20m;
+#   location / {
+#     proxy_pass http://127.0.0.1:3000;
+#     proxy_http_version 1.1;
+#     proxy_set_header Host $host;
+#     proxy_set_header X-Real-IP $remote_addr;
+#     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#     proxy_set_header X-Forwarded-Proto $scheme;
+#     proxy_buffering off;
+#     proxy_cache off;
+#     proxy_read_timeout 300s;
+#     proxy_send_timeout 300s;
+#   }
+# }
