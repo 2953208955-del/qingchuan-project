@@ -1,11 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useInspectionStore } from '@/stores/inspection-store'
+import { useRunStream } from '@/hooks/use-run-stream'
 import { UploadDropzone } from '@/components/inspection/upload-dropzone'
 import { InstructionInput } from '@/components/inspection/instruction-input'
 import { VoiceInput } from '@/components/inspection/voice-input'
 import { PlanConfirm } from '@/components/inspection/plan-confirm'
+import { AgentTimeline } from '@/components/inspection/agent-timeline'
+import { EvidenceCanvas } from '@/components/inspection/evidence-canvas'
+import { DetectionList } from '@/components/inspection/detection-list'
+import { ClausePanel } from '@/components/inspection/clause-panel'
 import { Plan } from '@/lib/domain/schemas'
 
 type RunResponse = { id?: string; message?: string }
@@ -16,8 +21,21 @@ export default function InspectPage() {
   const [planning, setPlanning] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // `started` locks the launch button; `finished` gates the evidence view so the
+  // canvas never renders the pre-analysis upload ids (only DB ids resolve).
+  const [started, setStarted] = useState(false)
+  const [finished, setFinished] = useState(false)
+  const [finalStatus, setFinalStatus] = useState<string | null>(null)
+  // A ref locks the launch synchronously, before React re-renders with
+  // `started`, so two clicks in one frame cannot open two streams.
+  const startedRef = useRef(false)
   const plan = useInspectionStore(s => s.plan)
+  const runId = useInspectionStore(s => s.runId)
   const images = useInspectionStore(s => s.images)
+  const detections = useInspectionStore(s => s.detections)
+  const clauses = useInspectionStore(s => s.clauses)
+  const { start, running } = useRunStream()
+  const busy = planning || running
 
   // The plan is derived from instruction/location/images; changing any of them
   // makes the confirmed plan stale, so drop it (the UI renders store.plan).
@@ -46,7 +64,7 @@ export default function InspectPage() {
     // Never start planning while a batch is uploading, and vice versa: the
     // dropzone is disabled while `planning`, so the upload snapshot cannot move
     // between the request and the reset below.
-    if (!instruction.trim() || currentImages.length === 0 || planning || uploading) return
+    if (!instruction.trim() || currentImages.length === 0 || planning || uploading || running) return
     setPlanning(true)
     try {
       const runRes = await fetch('/api/runs', {
@@ -76,6 +94,10 @@ export default function InspectPage() {
       store.setRunId(run.id)
       store.setImages(currentImages)
       store.setPlan(parsed.data)
+      startedRef.current = false
+      setStarted(false)
+      setFinished(false)
+      setFinalStatus(null)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -83,11 +105,30 @@ export default function InspectPage() {
     }
   }
 
-  // TASK 20 INTEGRATION POINT: replace this no-op with the SSE start call
-  // (useRunStream / POST /api/runs/[id]/analyze) using store.runId. PlanConfirm
-  // and the rest of this page stay unchanged; the timeline consumes the events.
-  function handleConfirmPlan() {
-    // Task 20 launches the streaming analysis from here.
+  async function handleConfirmPlan() {
+    const store = useInspectionStore.getState()
+    const currentRunId = store.runId
+    if (!currentRunId || running || startedRef.current) return
+    startedRef.current = true
+    setError(null)
+    setStarted(true)
+    setFinished(false)
+    setFinalStatus(null)
+    try {
+      const result = await start(currentRunId)
+      if (!result) return
+      setFinalStatus(result.status)
+      setFinished(true)
+    } catch (err) {
+      setError((err as Error).message)
+      // A launch rejected before any step streamed (e.g. 404/409/429) means the
+      // run never started, so allow another attempt. Once events streamed, the
+      // server run is no longer startable and the launcher stays locked.
+      if (useInspectionStore.getState().steps.length === 0) {
+        startedRef.current = false
+        setStarted(false)
+      }
+    }
   }
 
   function cancelPlan() {
@@ -103,17 +144,17 @@ export default function InspectPage() {
         </p>
       </header>
 
-      <UploadDropzone disabled={planning} onBusyChange={setUploading} />
-      <InstructionInput value={instruction} onChange={updateInstruction} disabled={planning} />
+      <UploadDropzone disabled={busy} onBusyChange={setUploading} />
+      <InstructionInput value={instruction} onChange={updateInstruction} disabled={busy} />
 
       <div className="flex flex-wrap items-start gap-4">
-        <VoiceInput onText={updateInstruction} disabled={planning} />
+        <VoiceInput onText={updateInstruction} disabled={busy} />
         <label className="block text-sm">
           地点（选填）
           <input
             value={location}
             onChange={e => updateLocation(e.target.value)}
-            disabled={planning}
+            disabled={busy}
             placeholder="例如：清川河 XX 桥段"
             className="mt-1 block w-64 rounded-lg border border-border bg-background p-2 disabled:opacity-50"
           />
@@ -123,7 +164,7 @@ export default function InspectPage() {
       <button
         type="button"
         onClick={createPlan}
-        disabled={planning || uploading || !instruction.trim() || images.length === 0}
+        disabled={busy || uploading || !instruction.trim() || images.length === 0}
         className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
       >
         {planning ? '生成计划中…' : '生成计划'}
@@ -136,7 +177,36 @@ export default function InspectPage() {
       )}
 
       {plan && (
-        <PlanConfirm plan={plan} onConfirm={handleConfirmPlan} onCancel={cancelPlan} disabled={planning} />
+        <PlanConfirm
+          plan={plan}
+          onConfirm={handleConfirmPlan}
+          onCancel={cancelPlan}
+          disabled={busy || started}
+        />
+      )}
+
+      {started && runId && (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div>
+            {finished ? (
+              <EvidenceCanvas images={images} detections={detections} />
+            ) : (
+              <section aria-label="证据画布" className="rounded-xl border border-dashed border-border p-6">
+                <p className="text-sm text-muted-foreground">
+                  {running ? '分析进行中，识别框将在分析完成后显示。' : '分析未完成，暂无识别结果。'}
+                </p>
+              </section>
+            )}
+          </div>
+          <aside className="space-y-4">
+            <AgentTimeline runId={runId} finalStatus={finalStatus} />
+            <DetectionList detections={detections} />
+            <section aria-label="检索到的标准条款" className="space-y-2">
+              <h2 className="text-sm font-medium">标准条款</h2>
+              <ClausePanel clauses={clauses} />
+            </section>
+          </aside>
+        </div>
       )}
     </div>
   )
