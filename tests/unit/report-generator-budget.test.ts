@@ -4,7 +4,10 @@ import type { ReportContext } from '@/lib/agent/types'
 const mocks = vi.hoisted(() => ({ generateJson: vi.fn() }))
 
 vi.mock('@/lib/ai/generate-json', () => ({ generateJson: mocks.generateJson }))
-vi.mock('@/lib/ai/providers', () => ({ getTextModel: () => ({}) }))
+vi.mock('@/lib/ai/providers', () => ({
+  getTextModel: () => ({}),
+  getTextModelId: () => 'deepseek-chat',
+}))
 
 import { DeepSeekReportGenerator } from '@/lib/agent/report-generator'
 import { BudgetTracker, BudgetExceededError } from '@/lib/ai/budget'

@@ -5,6 +5,7 @@ import { DebrisCategory } from '@/lib/domain/schemas'
 import type { Detection, ReportDraft, RunStatus } from '@/lib/domain/schemas'
 import type { Db } from '@/lib/db/client'
 import type { RunRow } from '@/lib/db/repo'
+import type { BudgetTracker } from '@/lib/ai/budget'
 import type { ReporterPort, RetrievalPort, VerifierPort } from './types'
 
 // The report tail shared by a fresh inspection and by "regenerate after review".
@@ -44,8 +45,10 @@ export interface FinalizeReportInput {
   reporter: ReporterPort
   verifier: VerifierPort
   now: () => Date
-  // Only a fresh run knows its spend; regeneration must preserve the stored one.
-  totalCostCny?: number
+  // Read AFTER drafting/repair, so the reporter's charges are persisted too.
+  // The tracker is seeded by the caller (0 for a fresh run, the stored total
+  // for regeneration).
+  budget: BudgetTracker
 }
 
 export interface FinalizeReportResult {
@@ -55,7 +58,7 @@ export interface FinalizeReportResult {
 }
 
 export async function finalizeReport(input: FinalizeReportInput): Promise<FinalizeReportResult> {
-  const { db, repo, run, detections, analyzedImageCount, retrieval, reporter, verifier, now } = input
+  const { db, repo, run, detections, analyzedImageCount, retrieval, reporter, verifier, now, budget } = input
   if (!Number.isInteger(analyzedImageCount) || analyzedImageCount <= 0) {
     throw new Error('analyzedImageCount must be a positive integer')
   }
@@ -113,10 +116,12 @@ export async function finalizeReport(input: FinalizeReportInput): Promise<Finali
     status: exportable ? 'draft' : 'needs_review',
   })
 
+  // budget.spent now includes the reporter's draft/repair charges; snapshotting
+  // it earlier (before drafting) would persist a stale total.
   repo.updateRun(db, run.id, {
     status,
     error: null,
-    ...(input.totalCostCny !== undefined ? { totalCostCny: input.totalCostCny } : {}),
+    totalCostCny: budget.spent,
   })
 
   return { report, verification, status }

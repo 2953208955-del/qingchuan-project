@@ -15,7 +15,14 @@ export type RegenerateErrorCode =
   | 'RUN_NOT_REGENERABLE'
   | 'NO_DETECTIONS'
   | 'REVIEW_PENDING'
+  | 'RATE_LIMITED'
   | 'REPORT_FAILED'
+
+export interface RegenerateGateError {
+  status: number
+  code: RegenerateErrorCode
+  message: string
+}
 
 export type RegenerateOutcome =
   | {
@@ -40,6 +47,9 @@ export interface RegenerateDeps {
   // same RUN_BUDGET_CNY cap as analysis.
   budget: BudgetTracker
   now?: () => Date
+  // Invoked after all cheap DB guards and immediately before the claim/draft
+  // (route: rate limiting). Guard-rejected requests must not consume a hit.
+  gate?: () => RegenerateGateError | null
 }
 
 function fail(
@@ -64,7 +74,11 @@ export async function regenerateReport(
 
   const latestReport = repo.getLatestReport(db, runId)
   const reportStale = latestReport?.status === 'stale'
-  if (run.status !== 'awaiting_review' && !reportStale) {
+  // A `failed` run with detections is retryable (REPORT_FAILED is genuinely
+  // retryable); a completed run whose report went stale after review is the
+  // normal post-review path.
+  const eligible = run.status === 'awaiting_review' || run.status === 'failed' || reportStale
+  if (!eligible) {
     return run.status === 'completed'
       ? fail(409, 'ALREADY_COMPLETED', '报告已完成，无需重新生成')
       : fail(409, 'RUN_NOT_REGENERABLE', '任务当前状态无法重新生成报告')
@@ -77,6 +91,10 @@ export async function regenerateReport(
   if (pendingCount > 0) {
     return fail(409, 'REVIEW_PENDING', `还需复核 ${pendingCount} 项低置信识别结果`, pendingCount)
   }
+
+  // Cheap guards passed; only now may the route spend a rate-limit hit.
+  const gateError = deps.gate?.()
+  if (gateError) return fail(gateError.status, gateError.code, gateError.message)
 
   // The check-then-act gate: one concurrent caller wins the UPDATE, everyone
   // else stops before any embedding/reporter call.
@@ -102,11 +120,18 @@ export async function regenerateReport(
       reporter: deps.reporter,
       verifier: deps.verifier,
       now: deps.now ?? (() => new Date()),
-      totalCostCny: deps.budget.spent,
+      budget: deps.budget,
     })
     const report = repo.getLatestReport(db, runId)
+    const updated = repo.getRun(db, runId)
     if (!report) return fail(502, 'REPORT_FAILED', '报告写入失败')
-    return { ok: true, report, runStatus: result.status, totalCostCny: deps.budget.spent }
+    return {
+      ok: true,
+      report,
+      runStatus: result.status,
+      // Read back from the DB so the response and the persisted row agree.
+      totalCostCny: updated?.totalCostCny ?? deps.budget.spent,
+    }
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     const message = error instanceof BudgetExceededError ? `预算超限：${detail}` : detail || '重新生成报告失败'

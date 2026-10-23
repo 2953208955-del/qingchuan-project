@@ -1,11 +1,15 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 
+export function getTextModelId() {
+  return process.env.TEXT_MODEL ?? 'deepseek-chat'
+}
+
 export function getTextModel() {
   return createOpenAICompatible({
     name: 'deepseek',
     baseURL: 'https://api.deepseek.com/v1',
     apiKey: process.env.DEEPSEEK_API_KEY ?? '',
-  })(process.env.TEXT_MODEL ?? 'deepseek-chat')
+  })(getTextModelId())
 }
 
 export function getVisionModelId() {

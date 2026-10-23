@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { createDb } from '@/lib/db/client'
 import * as repo from '@/lib/db/repo'
 import { finalizeReport } from '@/lib/agent/report-pipeline'
+import { BudgetTracker } from '@/lib/ai/budget'
 import type { ReportContext, ReporterPort, RetrievalPort, VerifierPort } from '@/lib/agent/types'
 import type { Detection, ReportDraft } from '@/lib/domain/schemas'
 
@@ -73,6 +74,7 @@ describe('finalizeReport', () => {
       reporter: generate,
       verifier: passingVerifier,
       now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
     })
 
     expect(result.status).toBe('completed')
@@ -96,6 +98,7 @@ describe('finalizeReport', () => {
       reporter: reporter(),
       verifier: passingVerifier,
       now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
     })
 
     expect(result.status).toBe('awaiting_review')
@@ -120,6 +123,7 @@ describe('finalizeReport', () => {
       reporter: generate,
       verifier: passingVerifier,
       now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
     })
 
     const context = generate.draft.mock.calls[0][0] as ReportContext
@@ -144,6 +148,7 @@ describe('finalizeReport', () => {
       reporter: reporter(),
       verifier: passingVerifier,
       now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
     })
 
     expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['foam'])
@@ -166,6 +171,7 @@ describe('finalizeReport', () => {
       reporter: generate,
       verifier: { verify },
       now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
     })
 
     expect(generate.repair).toHaveBeenCalledTimes(1)

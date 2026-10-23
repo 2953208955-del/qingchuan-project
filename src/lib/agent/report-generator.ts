@@ -2,13 +2,9 @@ import { ReportDraft } from '@/lib/domain/schemas'
 import type { VerifyIssue } from '@/lib/domain/evidence'
 import type { ReportContext, ReporterPort } from './types'
 import { generateJson } from '@/lib/ai/generate-json'
-import { getTextModel } from '@/lib/ai/providers'
+import { getTextModel, getTextModelId } from '@/lib/ai/providers'
 import { BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { REPORTER_PROMPT, PROMPT_VERSIONS } from '@/lib/ai/prompts'
-
-function textModelName(): string {
-  return process.env.TEXT_MODEL ?? 'deepseek-chat'
-}
 
 /**
  * Code is the authority for metrics, model provenance, inspection time and
@@ -25,7 +21,7 @@ export function parseReportWithMetrics(raw: unknown, context: ReportContext): Re
     inspectedAt: context.inspectedAt,
     metrics: context.metrics,
     modelInfo: {
-      textModel: textModelName(),
+      textModel: getTextModelId(),
       visionModel: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
       promptVersion: PROMPT_VERSIONS.reporter,
     },
@@ -66,7 +62,7 @@ export class DeepSeekReportGenerator implements ReporterPort {
 
   private charge(usage: { inputTokens: number; outputTokens: number }): void {
     // BudgetExceededError deliberately propagates: callers must abort the run.
-    this.opts.budget?.add(estimateCostCny(textModelName(), usage))
+    this.opts.budget?.add(estimateCostCny(getTextModelId(), usage))
   }
 
   async draft(context: ReportContext): Promise<ReportDraft> {

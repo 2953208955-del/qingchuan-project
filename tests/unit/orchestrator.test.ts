@@ -225,6 +225,29 @@ describe('runInspection', () => {
     expect(run?.totalCostCny).toBeGreaterThan(0)
   })
 
+  it('persists report-drafting charges in the run total', async () => {
+    const { db, runId } = setup()
+    const budget = new BudgetTracker(1)
+    const d = deps(db, {
+      budget,
+      reporter: {
+        draft: async () => {
+          budget.add(0.05)
+          return report()
+        },
+        repair: async () => report(),
+      },
+    })
+
+    await runInspection(runId, d as never)
+
+    const run = getRun(db, runId)
+    expect(budget.spent).toBeGreaterThanOrEqual(0.05)
+    // The persisted total is read after drafting, so it matches the tracker
+    // (vision spend + the reporter charge) instead of a pre-draft snapshot.
+    expect(run?.totalCostCny).toBeCloseTo(budget.spent)
+  })
+
   it('increments the report version on a re-run of the same run', async () => {
     const { db, runId } = setup()
     await runInspection(runId, deps(db) as never)

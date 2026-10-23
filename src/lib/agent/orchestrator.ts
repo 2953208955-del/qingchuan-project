@@ -165,7 +165,7 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
       reporter: deps.reporter,
       verifier: deps.verifier,
       now: deps.now,
-      totalCostCny: deps.budget.spent,
+      budget: deps.budget,
     })
     deps.emit({ type: 'done', runId, status })
     return status

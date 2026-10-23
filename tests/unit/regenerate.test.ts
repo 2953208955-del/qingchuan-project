@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import path from 'node:path'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { createDb } from '@/lib/db/client'
@@ -88,7 +88,16 @@ function setup(opts: {
 function deps(budget = new BudgetTracker(1, 0.1)): RegenerateDeps {
   return {
     retrieval: { retrieve: async () => ({ clauses: [], noEvidence: true }) },
-    reporter: { draft: async context => reportFor(context), repair: async context => reportFor(context) },
+    reporter: {
+      draft: vi.fn(async (context: ReportContext) => {
+        budget.add(0.05)
+        return reportFor(context)
+      }),
+      repair: vi.fn(async (context: ReportContext) => {
+        budget.add(0.05)
+        return reportFor(context)
+      }),
+    },
     verifier: { verify: () => ({ passed: true, issues: [] }) },
     budget,
     now,
@@ -118,7 +127,10 @@ describe('regenerateReport', () => {
 
     const run = repo.getRun(db, runId)
     expect(run?.status).toBe('completed')
-    expect(run?.totalCostCny).toBeCloseTo(0.1)
+    // The fake reporter charged 0.05 during draft; that must be persisted and
+    // echoed by the response, not overwritten with the pre-draft snapshot.
+    expect(run?.totalCostCny).toBeCloseTo(0.15)
+    expect(outcome.totalCostCny).toBeCloseTo(0.15)
     const latest = repo.getLatestReport(db, runId)
     expect(latest).toMatchObject({ version: 2, status: 'draft' })
 
@@ -128,6 +140,27 @@ describe('regenerateReport', () => {
     expect(document?.exportBlocked).toBe(false)
     expect(document?.pendingReviewCount).toBe(0)
     expect(document?.report.title).toBe('报告')
+  })
+
+  it('accumulates spend across regeneration calls', async () => {
+    const { db, runId } = setup({ reviewStatus: 'pending' })
+    repo.updateDetection(db, 'd1', { reviewStatus: 'confirmed' })
+
+    const first = await regenerateReport(db, runId, deps())
+    expect(first.ok).toBe(true)
+    const afterFirst = repo.getRun(db, runId)?.totalCostCny ?? 0
+    expect(afterFirst).toBeCloseTo(0.15)
+
+    // Make the run reviewable again (the real path is a fresh review marking
+    // the report stale) and seed the next call from the persisted total.
+    repo.updateRun(db, runId, { status: 'awaiting_review' })
+    repo.markReportStale(db, runId)
+
+    const second = await regenerateReport(db, runId, deps(new BudgetTracker(1, afterFirst)))
+    expect(second.ok).toBe(true)
+    if (!second.ok) throw new Error(second.message)
+    expect(second.totalCostCny).toBeCloseTo(0.2)
+    expect(repo.getRun(db, runId)?.totalCostCny).toBeCloseTo(0.2)
   })
 
   it('returns RUN_BUSY while the run is in flight', async () => {
@@ -153,5 +186,58 @@ describe('regenerateReport', () => {
     const outcome = await regenerateReport(db, runId, deps())
 
     expect(outcome).toMatchObject({ ok: false, status: 409, code: 'NO_DETECTIONS' })
+  })
+
+  it('retries a failed run that still has detections', async () => {
+    const { db, runId } = setup({ status: 'failed', reviewStatus: 'confirmed' })
+    repo.updateRun(db, runId, { error: 'prior failure' })
+
+    const outcome = await regenerateReport(db, runId, deps())
+
+    expect(outcome.ok).toBe(true)
+    const run = repo.getRun(db, runId)
+    expect(run?.status).toBe('completed')
+    expect(run?.error).toBeNull()
+  })
+
+  it('regenerates a completed run whose report went stale after review', async () => {
+    const { db, runId } = setup({ status: 'completed', reportStatus: 'stale', reviewStatus: 'confirmed' })
+
+    const outcome = await regenerateReport(db, runId, deps())
+
+    expect(outcome.ok).toBe(true)
+    expect(repo.getRun(db, runId)?.status).toBe('completed')
+    expect(repo.getLatestReport(db, runId)).toMatchObject({ version: 2, status: 'draft' })
+  })
+
+  it('does not invoke the pre-claim gate for guard-rejected requests', async () => {
+    const { db, runId } = setup({ reviewStatus: 'pending' })
+    let gateCalls = 0
+
+    const outcome = await regenerateReport(db, runId, {
+      ...deps(),
+      gate: () => {
+        gateCalls++
+        return { status: 429, code: 'RATE_LIMITED', message: 'too many' }
+      },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, code: 'REVIEW_PENDING' })
+    expect(gateCalls).toBe(0)
+  })
+
+  it('returns the 429 gate error before claiming or drafting', async () => {
+    const { db, runId } = setup({ reviewStatus: 'confirmed' })
+    const d = deps()
+
+    const outcome = await regenerateReport(db, runId, {
+      ...d,
+      gate: () => ({ status: 429, code: 'RATE_LIMITED', message: 'too many' }),
+    })
+
+    expect(outcome).toMatchObject({ ok: false, status: 429, code: 'RATE_LIMITED' })
+    expect(repo.getRun(db, runId)?.status).toBe('awaiting_review')
+    expect(repo.getLatestReport(db, runId)?.version).toBe(1)
+    expect(vi.mocked(d.reporter.draft)).not.toHaveBeenCalled()
   })
 })

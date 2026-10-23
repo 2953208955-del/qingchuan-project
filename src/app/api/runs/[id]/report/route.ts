@@ -14,7 +14,8 @@ export const runtime = 'nodejs'
 export const maxDuration = 300
 
 // Regeneration is paid (embedding + rerank + DeepSeek drafts); cap the loop the
-// same way the analyze route caps analysis.
+// same way the analyze route caps analysis. The core only spends a hit after
+// all cheap eligibility/pending guards pass, just before the claim.
 const regenerateLimiter = new RateLimiter(3, 60_000)
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,13 +32,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 // end of the human-review loop: once every low-confidence finding is resolved,
 // the report can be regenerated and, if it verifies, exported.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!regenerateLimiter.check(clientKey(request))) {
-    return NextResponse.json(
-      { code: 'RATE_LIMITED', message: '重新生成请求过于频繁，请稍后再试', retryable: true },
-      { status: 429 },
-    )
-  }
-
   const { id } = await params
   const db = getDb()
   const run = repo.getRun(db, id)
@@ -45,12 +39,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // the same per-run RUN_BUDGET_CNY cap as analysis.
   const budget = new BudgetTracker(Number(process.env.RUN_BUDGET_CNY ?? 1), run?.totalCostCny ?? 0)
   const apiKey = process.env.DASHSCOPE_API_KEY ?? ''
+  const key = clientKey(request)
 
   const outcome = await regenerateReport(db, id, {
     retrieval: new RagRetrievalAdapter(db, new DashScopeEmbedder(apiKey), new DashScopeReranker(apiKey)),
     reporter: new DeepSeekReportGenerator({ budget }),
     verifier: { verify: verifyReport },
     budget,
+    gate: () => regenerateLimiter.check(key)
+      ? null
+      : { status: 429, code: 'RATE_LIMITED', message: '重新生成请求过于频繁，请稍后再试' },
   })
 
   if (outcome.ok) {
@@ -64,7 +62,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     {
       code: outcome.code,
       message: outcome.message,
-      retryable: outcome.code === 'RUN_BUSY' || outcome.code === 'REPORT_FAILED',
+      retryable: outcome.code === 'RUN_BUSY' || outcome.code === 'RATE_LIMITED' || outcome.code === 'REPORT_FAILED',
       ...(outcome.pendingCount !== undefined ? { pendingCount: outcome.pendingCount } : {}),
     },
     { status: outcome.status },
