@@ -26,4 +26,14 @@ describe('budget', () => {
     expect(b.remaining).toBe(0)
     expect(() => b.add(0)).toThrow(BudgetExceededError)
   })
+
+  it('starts from an existing spend so follow-up calls share the run cap', () => {
+    const b = new BudgetTracker(1, 0.4)
+    expect(b.spent).toBeCloseTo(0.4)
+    expect(b.remaining).toBeCloseTo(0.6)
+    b.add(0.2)
+    expect(b.spent).toBeCloseTo(0.6)
+    expect(() => b.add(0.5)).toThrow(BudgetExceededError)
+    expect(b.spent).toBeCloseTo(1.1)
+  })
 })

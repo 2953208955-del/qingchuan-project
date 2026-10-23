@@ -126,7 +126,6 @@ async function main() {
     model: process.env.VISION_MODEL ?? DEFAULT_VISION_MODEL,
   })
   const retrieval = new RagRetrievalAdapter(db, embedder, new DashScopeReranker(dashscopeKey))
-  const reporter = new DeepSeekReportGenerator()
 
   const details: ScenarioDetail[] = []
   for (const scenario of scenarios) {
@@ -144,15 +143,17 @@ async function main() {
         sha256: sampleSha256,
         status: 'pending',
       })
+      // Per-run budget: each scenario starts from zero, matching a real run.
+      // Vision and report drafting charge the same tracker.
+      const budget = new BudgetTracker(capCny)
       actual = await runInspection(run.id, {
         db,
         repo,
         vision,
         retrieval,
-        reporter,
+        reporter: new DeepSeekReportGenerator({ budget }),
         verifier: { verify: verifyReport },
-        // Per-run budget: each scenario starts from zero, matching a real run.
-        budget: new BudgetTracker(capCny),
+        budget,
         emit: () => {},
         now: () => new Date(),
       })

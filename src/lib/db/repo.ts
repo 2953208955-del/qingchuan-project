@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from './client'
 import { agentSteps, detections, images, reports, runs } from './schema'
 
@@ -25,6 +25,21 @@ export function getRun(db: Db, id: string) {
 
 export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'status' | 'error' | 'totalCostCny' | 'promptVersion'>>) {
   db.update(runs).set({ ...patch, updatedAt: Date.now() }).where(eq(runs.id, id)).run()
+}
+
+// Atomically move a reviewable run into the in-flight state. Only one caller
+// can win the UPDATE; the rest see 0 changes and must answer RUN_BUSY. The
+// route checks report staleness first, then this claim closes the check-then-act
+// race before any paid regeneration starts.
+export function claimRunForRegeneration(db: Db, id: string): number {
+  return db.update(runs)
+    .set({ status: 'aggregating', updatedAt: Date.now() })
+    .where(and(
+      eq(runs.id, id),
+      inArray(runs.status, ['awaiting_review', 'completed', 'stale', 'failed']),
+    ))
+    .run()
+    .changes
 }
 
 export function addImage(db: Db, input: {

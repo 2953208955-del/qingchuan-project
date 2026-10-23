@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db/client'
+import type { Db } from '@/lib/db/client'
 import { getLatestReport, getRun, listDetections, listImages } from '@/lib/db/repo'
 import { pendingLowConfidenceCount } from '@/lib/domain/review'
 import { ReportDraft, ReportStatus, RunStatus } from '@/lib/domain/schemas'
@@ -33,9 +34,9 @@ export function isExportBlocked(input: {
 
 // Single load path for both the report and print routes. Missing rows or a
 // corrupt draft return null so each page can call notFound(); neither page ever
-// renders unparsed content.
-export function loadReportDocument(id: string): ReportDocument | null {
-  const db = getDb()
+// renders unparsed content. The explicit `db` overload lets tests exercise the
+// same gate against an in-memory database.
+export function loadReportDocumentFrom(db: Db, id: string): ReportDocument | null {
   const run = getRun(db, id)
   const row = getLatestReport(db, id)
   if (!run || !row) return null
@@ -69,4 +70,8 @@ export function loadReportDocument(id: string): ReportDocument | null {
     }),
     pendingReviewCount: pendingLowConfidenceCount(detections),
   }
+}
+
+export function loadReportDocument(id: string): ReportDocument | null {
+  return loadReportDocumentFrom(getDb(), id)
 }

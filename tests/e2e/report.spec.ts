@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 
-// Uses the deterministic fixture written by tests/e2e/seed-e2e.ts: the report
-// row is `needs_review` and one detection is a pending 0.42 finding, so the
-// export gate must stay closed until that finding is reviewed.
-test('reviews the low-confidence finding and regenerates an exportable report', async ({ page }) => {
+// Client wiring only: the server transition from awaiting_review to an
+// exportable draft is covered by tests/unit/regenerate.test.ts. This test uses
+// the seeded needs_review fixture and mocks the regenerate POST.
+test('client wiring: blocked notice, review action, regenerate request and success notice', async ({ page }) => {
   await page.goto('/reports')
   const entry = page.getByRole('link', { name: /E2E 验收报告/ })
   await expect(entry).toBeVisible()
@@ -17,6 +17,16 @@ test('reviews the low-confidence finding and regenerates an exportable report', 
 
   await expect(page.getByRole('button', { name: '导出 PDF' })).toBeDisabled()
   await expect(page.getByRole('button', { name: '还需复核 1 项' })).toBeDisabled()
+  await expect(
+    page.locator('p[role="status"]').filter({ hasText: /报告或低置信识别结果尚待人工复核/ }),
+  ).toBeVisible()
+
+  // Ctrl+P on the report page itself is also blocked: the body is hidden in
+  // print media and replaced by a print-only notice.
+  await page.emulateMedia({ media: 'print' })
+  await expect(page.getByRole('heading', { name: '报告暂不可导出' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'E2E 验收报告' })).toBeHidden()
+  await page.emulateMedia({ media: 'screen' })
 
   // The print route is the "save as PDF" path: it must not render the body.
   await page.goto('/reports/e2e-run-1/print')
@@ -34,10 +44,12 @@ test('reviews the low-confidence finding and regenerates an exportable report', 
   await page.reload()
 
   await expect(page.getByRole('button', { name: '导出 PDF' })).toBeDisabled()
+  await expect(page.getByText(/请复核完成后在报告页重新生成报告/)).toBeVisible()
   const regenerate = page.getByRole('button', { name: '重新生成报告' })
   await expect(regenerate).toBeEnabled()
 
-  // Keep AI offline: only the regenerate POST is mocked.
+  // Keep AI offline: only the regenerate POST is mocked. Asserting the success
+  // notice proves the client wiring; the DB transition is unit-tested.
   await page.route('**/api/runs/e2e-run-1/report', route => {
     if (route.request().method() !== 'POST') return route.continue()
     return route.fulfill({

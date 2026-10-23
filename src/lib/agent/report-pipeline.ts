@@ -61,16 +61,19 @@ export async function finalizeReport(input: FinalizeReportInput): Promise<Finali
   }
 
   repo.updateRun(db, run.id, { status: 'aggregating' })
-  const severity = computeSeverity(detections, analyzedImageCount)
+  // Rejected findings must never enter metrics, evidence or the reporter
+  // prompt, whatever the caller passed in.
+  const activeDetections = detections.filter(detection => detection.reviewStatus !== 'rejected')
+  const severity = computeSeverity(activeDetections, analyzedImageCount)
 
   repo.updateRun(db, run.id, { status: 'retrieving' })
   const focusCategories = parseFocusCategories(run.focusCategories)
-  const categories = focusCategories.length > 0 ? focusCategories : detectedCategories(detections)
+  const categories = focusCategories.length > 0 ? focusCategories : detectedCategories(activeDetections)
   const { clauses } = await retrieval.retrieve(run.instruction, categories)
 
   const metrics: ReportDraft['metrics'] = {
     imageCount: analyzedImageCount,
-    detectionCount: detections.length,
+    detectionCount: activeDetections.length,
     weightedTotal: severity.weightedTotal,
     intensity: severity.intensity,
     severity: severity.overall,
@@ -81,14 +84,14 @@ export async function finalizeReport(input: FinalizeReportInput): Promise<Finali
     instruction: run.instruction,
     location: run.location,
     inspectedAt: now().toISOString(),
-    detections,
+    detections: activeDetections,
     metrics,
     clauses,
   }
 
   repo.updateRun(db, run.id, { status: 'drafting' })
   let report = await reporter.draft(context)
-  const index = buildEvidenceIndex({ detections, clauses, metrics })
+  const index = buildEvidenceIndex({ detections: activeDetections, clauses, metrics })
 
   repo.updateRun(db, run.id, { status: 'verifying' })
   let verification = verifier.verify(report, index)
@@ -99,7 +102,7 @@ export async function finalizeReport(input: FinalizeReportInput): Promise<Finali
 
   // A report is exportable only when the verifier accepts it and no
   // low-confidence finding is still waiting for a human decision.
-  const exportable = verification.passed && !hasPendingLowConfidence(detections)
+  const exportable = verification.passed && !hasPendingLowConfidence(activeDetections)
   const status: FinalReportStatus = exportable ? 'completed' : 'awaiting_review'
 
   repo.saveReport(db, {

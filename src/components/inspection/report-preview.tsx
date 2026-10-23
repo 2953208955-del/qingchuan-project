@@ -117,7 +117,7 @@ export function ReportPreview({
         </p>
         {stale && (
           <p role="alert" className="text-destructive">
-            识别结果已修改，当前报告已过期，请返回工作台重新发起巡检。
+            识别结果已修改，当前报告已过期；请复核完成后在报告页重新生成报告。
           </p>
         )}
         {!stale && exportBlocked && (

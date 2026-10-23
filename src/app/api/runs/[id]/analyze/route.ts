@@ -36,6 +36,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     )
   }
 
+  // One tracker for the whole run: vision calls and report drafting both add
+  // to it, and the orchestrator persists its final spend.
+  const budget = new BudgetTracker(Number(process.env.RUN_BUDGET_CNY ?? 1))
+
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
@@ -60,9 +64,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             new DashScopeEmbedder(process.env.DASHSCOPE_API_KEY ?? ''),
             new DashScopeReranker(process.env.DASHSCOPE_API_KEY ?? ''),
           ),
-          reporter: new DeepSeekReportGenerator(),
+          reporter: new DeepSeekReportGenerator({ budget }),
           verifier: { verify: verifyReport },
-          budget: new BudgetTracker(Number(process.env.RUN_BUDGET_CNY ?? 1)),
+          budget,
           emit,
           now: () => new Date(),
         })

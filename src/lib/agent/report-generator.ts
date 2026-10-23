@@ -3,7 +3,12 @@ import type { VerifyIssue } from '@/lib/domain/evidence'
 import type { ReportContext, ReporterPort } from './types'
 import { generateJson } from '@/lib/ai/generate-json'
 import { getTextModel } from '@/lib/ai/providers'
+import { BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { REPORTER_PROMPT, PROMPT_VERSIONS } from '@/lib/ai/prompts'
+
+function textModelName(): string {
+  return process.env.TEXT_MODEL ?? 'deepseek-chat'
+}
 
 /**
  * Code is the authority for metrics, model provenance, inspection time and
@@ -20,7 +25,7 @@ export function parseReportWithMetrics(raw: unknown, context: ReportContext): Re
     inspectedAt: context.inspectedAt,
     metrics: context.metrics,
     modelInfo: {
-      textModel: process.env.TEXT_MODEL ?? 'deepseek-chat',
+      textModel: textModelName(),
       visionModel: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
       promptVersion: PROMPT_VERSIONS.reporter,
     },
@@ -57,6 +62,13 @@ function promptFor(context: ReportContext, issues?: VerifyIssue[]) {
 const ReportModelOutput = ReportDraft.omit({ metrics: true, modelInfo: true })
 
 export class DeepSeekReportGenerator implements ReporterPort {
+  constructor(private readonly opts: { budget?: BudgetTracker } = {}) {}
+
+  private charge(usage: { inputTokens: number; outputTokens: number }): void {
+    // BudgetExceededError deliberately propagates: callers must abort the run.
+    this.opts.budget?.add(estimateCostCny(textModelName(), usage))
+  }
+
   async draft(context: ReportContext): Promise<ReportDraft> {
     const result = await generateJson({
       model: getTextModel(),
@@ -64,6 +76,7 @@ export class DeepSeekReportGenerator implements ReporterPort {
       system: REPORTER_PROMPT,
       prompt: promptFor(context),
     })
+    this.charge(result.usage)
     return parseReportWithMetrics(result.value, context)
   }
 
@@ -74,6 +87,7 @@ export class DeepSeekReportGenerator implements ReporterPort {
       system: REPORTER_PROMPT,
       prompt: promptFor(context, issues),
     })
+    this.charge(result.usage)
     return parseReportWithMetrics(result.value, context)
   }
 }

@@ -103,6 +103,33 @@ describe('finalizeReport', () => {
     expect(repo.getLatestReport(db, run.id)).toMatchObject({ version: 1, status: 'needs_review' })
   })
 
+  it('drops rejected detections from metrics, evidence and the reporter context', async () => {
+    const { db, run } = setup()
+    const generate = reporter()
+
+    await finalizeReport({
+      db,
+      repo,
+      run,
+      detections: [
+        detection({ id: 'kept', confidence: 0.9, reviewStatus: 'confirmed' }),
+        detection({ id: 'gone', confidence: 0.9, reviewStatus: 'rejected' }),
+      ],
+      analyzedImageCount: 1,
+      retrieval: retrieval(),
+      reporter: generate,
+      verifier: passingVerifier,
+      now: () => new Date('2026-10-22T00:00:00.000Z'),
+    })
+
+    const context = generate.draft.mock.calls[0][0] as ReportContext
+    expect(context.detections.map(d => d.id)).toEqual(['kept'])
+    expect(context.metrics.detectionCount).toBe(1)
+    const row = repo.getLatestReport(db, run.id)
+    const stored = JSON.parse(row?.contentJson ?? '{}') as ReportDraft
+    expect(stored.metrics.detectionCount).toBe(1)
+  })
+
   it('prefers focus categories over detected categories for retrieval', async () => {
     const { db, run } = setup(['foam'])
     const retrieve = retrieval()

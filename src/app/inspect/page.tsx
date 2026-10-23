@@ -228,7 +228,7 @@ export default function InspectPage() {
             {finished && <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />}
             {reportStale && (
               <p role="status" aria-live="polite" className="text-xs text-destructive">
-                识别结果已复核修改，现有报告已过期，请返回工作台重新发起巡检。
+                识别结果已复核修改，现有报告已过期，请到报告页重新生成报告。
               </p>
             )}
             <section aria-label="检索到的标准条款" className="space-y-2">
