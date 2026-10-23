@@ -1,15 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { computeIou, matchDetections } from '@/lib/eval/metrics'
+import { computeIou, matchDetections, type DetectionLike } from '@/lib/eval/metrics'
 import type { BBox, Detection } from '@/lib/domain/schemas'
-
-type DetLike = Pick<Detection, 'id' | 'imageId' | 'category' | 'bbox'>
 
 function det(
   id: string,
   imageId: string,
   category: Detection['category'],
   bbox: BBox | null,
-): DetLike {
+): DetectionLike {
   return { id, imageId, category, bbox }
 }
 

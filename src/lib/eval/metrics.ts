@@ -25,14 +25,14 @@ export function matchDetections(
 
   for (const g of gt) {
     const gtBbox = g.bbox
-    if (!gtBbox) continue
+    if (gtBbox == null) continue
 
     let bestIndex = -1
     let bestIou = -Infinity
     for (let i = 0; i < pred.length; i++) {
       if (used.has(i)) continue
       const p = pred[i]
-      if (!p.bbox || p.imageId !== g.imageId || p.category !== g.category) continue
+      if (p.bbox == null || p.imageId !== g.imageId || p.category !== g.category) continue
       const iou = computeIou(gtBbox, p.bbox)
       if (iou >= iouThreshold && iou > bestIou) {
         bestIou = iou
@@ -46,6 +46,6 @@ export function matchDetections(
     }
   }
 
-  const localizedGt = gt.filter(g => g.bbox !== null).length
+  const localizedGt = gt.filter(g => g.bbox != null).length
   return { tp, fp: pred.length - tp, fn: localizedGt - tp }
 }

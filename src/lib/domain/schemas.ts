@@ -6,14 +6,18 @@ export const DebrisCategory = z.enum([
 ])
 export type DebrisCategory = z.infer<typeof DebrisCategory>
 
+export const Severity = z.enum(['low', 'medium', 'high'])
+export type Severity = z.infer<typeof Severity>
+
 export const CATEGORY_LABELS: Record<DebrisCategory, string> = {
   plastic_bottle: '塑料瓶', plastic_bag: '塑料袋', foam: '泡沫塑料',
   fishing_gear: '渔网渔具', metal: '金属', glass: '玻璃',
   paper: '纸类', textile: '织物', other: '其他', natural: '自然漂浮物',
 }
 
-export const Severity = z.enum(['low', 'medium', 'high'])
-export type Severity = z.infer<typeof Severity>
+export const SEVERITY_LABELS: Record<Severity, string> = {
+  low: '低', medium: '中', high: '高',
+}
 
 export const BBox = z.object({
   x: z.number().min(0).max(1),

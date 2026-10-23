@@ -20,6 +20,7 @@ export default function KnowledgePage() {
 
     setSearching(true)
     setError(null)
+    setClauses([])
     setNoEvidence(false)
     setSearched(false)
 

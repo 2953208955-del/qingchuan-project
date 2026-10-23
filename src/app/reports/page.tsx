@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { desc } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { reports } from '@/lib/db/schema'
-import type { Severity } from '@/lib/domain/schemas'
+import { SEVERITY_LABELS, Severity } from '@/lib/domain/schemas'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,12 +10,6 @@ const STATUS_LABELS: Record<string, string> = {
   draft: '草稿',
   needs_review: '待复核',
   stale: '已过期',
-}
-
-const SEVERITY_LABELS: Record<Severity, string> = {
-  low: '低',
-  medium: '中',
-  high: '高',
 }
 
 type ReportSummary = {
@@ -37,9 +31,8 @@ function parseSummary(contentJson: string): ReportSummary {
     const metrics = record.metrics && typeof record.metrics === 'object'
       ? record.metrics as { severity?: unknown; intensity?: unknown }
       : null
-    const severity = metrics?.severity === 'low' || metrics?.severity === 'medium' || metrics?.severity === 'high'
-      ? metrics.severity
-      : null
+    const parsedSeverity = Severity.safeParse(metrics?.severity)
+    const severity = parsedSeverity.success ? parsedSeverity.data : null
     const intensity = typeof metrics?.intensity === 'number' && Number.isFinite(metrics.intensity)
       ? metrics.intensity
       : null

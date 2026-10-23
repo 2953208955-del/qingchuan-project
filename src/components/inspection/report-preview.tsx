@@ -1,15 +1,11 @@
 'use client'
 
-import type { ReportDraft, Severity } from '@/lib/domain/schemas'
+import { SEVERITY_LABELS, type ReportDraft } from '@/lib/domain/schemas'
 import { EvidenceLink } from './evidence-link'
 import { useInspectionStore } from '@/stores/inspection-store'
 
 const SECTION_LABELS: Record<string, string> = {
   summary: '摘要', findings: '发现', severity: '严重度', recommendations: '整改建议', limitations: '局限性',
-}
-
-const SEVERITY_LABELS: Record<Severity, string> = {
-  low: '低', medium: '中', high: '高',
 }
 
 export function ReportPreview({
