@@ -140,6 +140,47 @@ describe('runInspection', () => {
     // Aborted before aggregation/drafting: nothing stored, no report.
     expect(listDetections(db, runId)).toHaveLength(0)
     expect(getLatestReport(db, runId)).toBeUndefined()
+    // A failed run still persists the cost it accrued.
+    expect(run?.totalCostCny).toBeGreaterThan(0)
+  })
+
+  it('does not start queued analyses after a budget abort', async () => {
+    const { db, runId } = setup(8)
+    const budget = new BudgetTracker(0.000001)
+    let visionCalls = 0
+    const d = deps(db, {
+      budget,
+      vision: {
+        analyze: async () => {
+          visionCalls++
+          return {
+            detections: [],
+            abstained: false,
+            usage: { inputTokens: 1000, outputTokens: 1000 },
+          }
+        },
+      },
+    })
+
+    const status = await runInspection(runId, d as never)
+    expect(status).toBe('failed')
+    const run = getRun(db, runId)
+    expect(run?.status).toBe('failed')
+    expect(run?.error).toContain('预算')
+    // Only the active wave reaches the paid call; queued images never start.
+    expect(visionCalls).toBeLessThanOrEqual(4)
+    expect(visionCalls).toBeLessThan(8)
+    // Costs accrued by in-flight calls are settled before the total is written.
+    expect(run?.totalCostCny).toBe(budget.spent)
+    expect(run?.totalCostCny).toBeGreaterThan(0)
+    // The image whose add() blew the cap is marked failed, not left pending.
+    expect(repo.listImages(db, runId).some(image => image.status === 'failed')).toBe(true)
+    // Nothing may still be running in the background after the run resolves.
+    const callsAtReturn = visionCalls
+    const costAtReturn = budget.spent
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(visionCalls).toBe(callsAtReturn)
+    expect(budget.spent).toBe(costAtReturn)
   })
 
   it('forwards focus categories and image hint to vision and retrieval', async () => {
