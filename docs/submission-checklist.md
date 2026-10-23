@@ -7,7 +7,7 @@
 
 - [ ] GitHub/Gitee 仓库公开，README 完整（介绍、架构、运行、命令、部署、评测、隐私、团队、License）
 - [ ] `.env.example` 存在且只有空值，仓库无真实密钥
-      （`git grep -nE "sk-|DASHSCOPE_API_KEY=.+|DEEPSEEK_API_KEY=.+"`）
+      （`git grep -nE "sk-|DASHSCOPE_API_KEY[=].+|DEEPSEEK_API_KEY[=].+"`）
 - [ ] `.env` / `.env.local` / `.superpowers/` 均未进入 Git 历史
 - [ ] Git 历史为逐日/逐功能提交，提交信息可读
 - [ ] 5–8 分钟 1080p 视频（普通话），覆盖问题、架构、实机演示、指标与社会价值
@@ -35,7 +35,7 @@
 ## 数据与合规
 
 - [ ] 样例图片许可证与来源已记录在 `public/samples/README.md`
-- [ ] 样例图无清晰人脸、车牌等个人信息，EXIF 已按需清理
+- [ ] 样例图无清晰人脸、车牌等个人信息，上传前已移除 EXIF/GPS 元数据（应用按原始字节保存，不会自动剥离）
 - [ ] 演示数据由 `npm run seed` 生成，未手工伪造识别结果
 - [ ] 隐私说明与实际数据流一致（图片仅在分析时发送到云端 API）
 

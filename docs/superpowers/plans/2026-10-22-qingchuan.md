@@ -4823,7 +4823,7 @@ console.log('演示数据已写入')
 # 提交检查清单（2026-11-18）
 
 - [ ] GitHub/Gitee 仓库公开，README 完整
-- [ ] `.env.example` 存在，仓库无真实密钥（`git grep -nE "sk-|DASHSCOPE_API_KEY=.+"`）
+- [ ] `.env.example` 存在，仓库无真实密钥（`git grep -nE "sk-|DASHSCOPE_API_KEY[=].+"`）
 - [ ] Git 历史为逐日/逐功能提交
 - [ ] 5–8 分钟 1080p 视频（普通话）
 - [ ] ≤30 页 PDF 技术文档（含 AI 选型、集成、优化、创新点、评测）
@@ -4910,7 +4910,7 @@ Expected: 全部通过；若有失败，修复后重跑。
 - [ ] **Step 3: 安全检查**
 
 ```bash
-git grep -nE "sk-[a-zA-Z0-9]{10,}|DASHSCOPE_API_KEY=.+|DEEPSEEK_API_KEY=.+"
+git grep -nE "sk-[a-zA-Z0-9]{10,}|DASHSCOPE_API_KEY[=].+|DEEPSEEK_API_KEY[=].+"
 ```
 
 Expected: 无输出（`.env.example` 中键名为空）。

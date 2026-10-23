@@ -17,12 +17,13 @@ export default async function ReportPrintPage({ params }: { params: Promise<{ id
         <Link href={`/reports/${id}`} className="text-xs text-muted-foreground underline">
           ← 返回报告
         </Link>
-        {!document.stale && <PrintButton />}
+        {!document.stale && !document.exportBlocked && <PrintButton />}
       </div>
 
       <ReportSections
         report={document.report}
         stale={document.stale}
+        exportBlocked={document.exportBlocked}
         images={document.images}
         detections={document.detections}
         runId={id}

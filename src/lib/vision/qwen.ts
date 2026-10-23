@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import { z } from 'zod'
-import { DASHSCOPE_BASE_URL } from '@/lib/ai/providers'
+import { AI_CALL_TIMEOUT_MS, DASHSCOPE_BASE_URL } from '@/lib/ai/providers'
 import { VISION_PROMPT } from '@/lib/ai/prompts'
 import { extractJson } from '@/lib/ai/generate-json'
 import { BBox, DebrisCategory } from '@/lib/domain/schemas'
@@ -58,6 +58,7 @@ export class QwenVisionAnalyzer implements VisionPort {
         const res = await fetchImpl(`${DASHSCOPE_BASE_URL}/chat/completions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.opts.apiKey}` },
+          signal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
           body: JSON.stringify({
             model: this.opts.model,
             temperature: 0.1,

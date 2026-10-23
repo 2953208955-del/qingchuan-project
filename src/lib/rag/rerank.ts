@@ -1,3 +1,5 @@
+import { AI_CALL_TIMEOUT_MS } from '@/lib/ai/providers'
+
 export interface RerankResult {
   index: number
   score: number
@@ -19,6 +21,7 @@ export class DashScopeReranker implements Reranker {
         input: { query, documents },
         parameters: { return_documents: false, top_n: topN },
       }),
+      signal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`rerank failed: ${res.status}`)
     const json = await res.json() as {

@@ -1,3 +1,5 @@
+import { AI_CALL_TIMEOUT_MS } from '@/lib/ai/providers'
+
 export interface Embedder {
   embed(texts: string[]): Promise<number[][]>
 }
@@ -10,6 +12,7 @@ export class DashScopeEmbedder implements Embedder {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify({ model: this.model, input: texts, dimensions: 1024 }),
+      signal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`embedding failed: ${res.status}`)
     const json = await res.json() as { data: { embedding: number[] }[] }

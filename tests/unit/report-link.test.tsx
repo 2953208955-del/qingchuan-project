@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { EvidenceLink } from '@/components/inspection/evidence-link'
 import { ReportPreview } from '@/components/inspection/report-preview'
 import { ReviewQueue } from '@/components/inspection/review-queue'
+import { isExportBlocked } from '@/lib/server/report-document'
 import { useInspectionStore } from '@/stores/inspection-store'
 import type { Detection } from '@/lib/domain/schemas'
 
@@ -54,6 +55,45 @@ describe('EvidenceLink', () => {
   it('disables export when the report is stale', () => {
     render(<ReportPreview report={report} stale />)
     expect(screen.getByRole('button', { name: '导出 PDF' })).toBeDisabled()
+  })
+})
+
+describe('export gate', () => {
+  it('blocks export while the report row needs review', () => {
+    expect(isExportBlocked({ reportStatus: 'needs_review', runStatus: 'completed', detections: [] })).toBe(true)
+  })
+
+  it('blocks export while a pending detection is below 0.5 confidence', () => {
+    expect(
+      isExportBlocked({
+        reportStatus: 'draft',
+        runStatus: 'completed',
+        detections: [detection({ confidence: 0.42, reviewStatus: 'pending' })],
+      }),
+    ).toBe(true)
+  })
+
+  it('blocks export while the run waits for review', () => {
+    expect(isExportBlocked({ reportStatus: 'draft', runStatus: 'awaiting_review', detections: [] })).toBe(true)
+  })
+
+  it('allows export once the draft is clean and no low-confidence item is pending', () => {
+    expect(
+      isExportBlocked({
+        reportStatus: 'draft',
+        runStatus: 'completed',
+        detections: [
+          detection({ id: 'd1', confidence: 0.42, reviewStatus: 'confirmed' }),
+          detection({ id: 'd2', confidence: 0.9, reviewStatus: 'pending' }),
+        ],
+      }),
+    ).toBe(false)
+  })
+
+  it('disables the export button for a gated report that is not stale', () => {
+    render(<ReportPreview report={report} stale={false} exportBlocked />)
+    expect(screen.getByRole('button', { name: '导出 PDF' })).toBeDisabled()
+    expect(screen.getByText(/尚待人工复核/)).toBeInTheDocument()
   })
 })
 

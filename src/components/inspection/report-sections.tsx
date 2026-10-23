@@ -7,6 +7,7 @@ import { ReportPreview } from './report-preview'
 export function ReportSections({
   report,
   stale,
+  exportBlocked,
   images,
   detections,
   runId,
@@ -14,6 +15,7 @@ export function ReportSections({
 }: {
   report: ReportDraft
   stale: boolean
+  exportBlocked: boolean
   images: UploadedImage[]
   detections: Detection[]
   runId: string
@@ -26,6 +28,7 @@ export function ReportSections({
       <ReportPreview
         report={report}
         stale={stale}
+        exportBlocked={exportBlocked}
         interactive={false}
         printHref={printable ? undefined : `/reports/${runId}/print`}
         showExport={!printable}

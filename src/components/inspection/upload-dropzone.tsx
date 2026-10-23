@@ -17,7 +17,9 @@ function validateFile(file: File): string | null {
 }
 
 async function uploadOne(file: File): Promise<UploadResponse> {
-  const compressed = await imageCompression(file, { maxWidthOrHeight: 1600, useWebWorker: true })
+  // Keep compression on the main thread: the library's worker mode fetches
+  // its own script from a CDN (libURL), which hangs offline and in E2E runs.
+  const compressed = await imageCompression(file, { maxWidthOrHeight: 1600, useWebWorker: false })
   const form = new FormData()
   form.append('file', compressed, file.name)
   const res = await fetch('/api/uploads', { method: 'POST', body: form })
@@ -109,7 +111,7 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
       <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
         {busy
           ? `正在上传 ${progress?.done ?? 0}/${progress?.total ?? 0}…`
-          : `已上传 ${images.length} 张，单张不超过 15MB，支持 JPEG、PNG、WebP`}
+          : `已选 ${images.length} 张，单张不超过 15MB，支持 JPEG、PNG、WebP`}
       </p>
       {error && (
         <p role="alert" className="mt-2 text-sm text-destructive">

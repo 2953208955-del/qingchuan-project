@@ -41,8 +41,8 @@ chmod 600 .env
 编辑 `.env`，至少填写：
 
 ```bash
-DEEPSEEK_API_KEY=...
-DASHSCOPE_API_KEY=...
+DEEPSEEK_API_KEY = <你的 DeepSeek 密钥>
+DASHSCOPE_API_KEY = <你的 DashScope 密钥>
 DATA_DIR=/opt/qingchuan/data
 APP_BASE_URL=https://your-domain.example.com
 RUN_BUDGET_CNY=1.0

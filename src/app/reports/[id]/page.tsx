@@ -23,6 +23,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       <ReportSections
         report={document.report}
         stale={document.stale}
+        exportBlocked={document.exportBlocked}
         images={document.images}
         detections={document.detections}
         runId={id}

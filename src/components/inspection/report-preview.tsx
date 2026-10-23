@@ -11,12 +11,16 @@ const SECTION_LABELS: Record<string, string> = {
 export function ReportPreview({
   report,
   stale,
+  exportBlocked = false,
   interactive = true,
   printHref,
   showExport = true,
 }: {
   report: ReportDraft
   stale: boolean
+  // True when the persisted report/run still needs human review or a
+  // low-confidence detection is unreviewed; the loader computes it.
+  exportBlocked?: boolean
   // Report pages have no page-level selection store to drive, so evidence is
   // rendered as plain chips there instead of dead buttons.
   interactive?: boolean
@@ -26,9 +30,10 @@ export function ReportPreview({
   showExport?: boolean
 }) {
   const selectedClaim = useInspectionStore(s => s.selectedClaimId)
+  const blocked = stale || exportBlocked
 
   function exportReport() {
-    if (stale) return
+    if (blocked) return
     if (printHref) window.open(printHref, '_blank', 'noopener')
     else window.print()
   }
@@ -115,6 +120,11 @@ export function ReportPreview({
             识别结果已修改，当前报告已过期，请返回工作台重新发起巡检。
           </p>
         )}
+        {!stale && exportBlocked && (
+          <p role="status">
+            报告或低置信识别结果尚待人工复核，复核完成前不能导出。
+          </p>
+        )}
       </footer>
 
       {showExport && (
@@ -122,7 +132,7 @@ export function ReportPreview({
           <button
             type="button"
             onClick={exportReport}
-            disabled={stale}
+            disabled={blocked}
             className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             导出 PDF

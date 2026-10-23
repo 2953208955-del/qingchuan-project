@@ -21,6 +21,9 @@ describe('QwenVisionAnalyzer', () => {
     const result = await analyzer.analyze({ imagePath })
     expect(result.abstained).toBe(false)
     expect(result.detections[0].category).toBe('plastic_bottle')
+    // Every direct DashScope call carries a per-call abort signal.
+    const init = (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1]
+    expect(init.signal).toBeInstanceOf(AbortSignal)
   })
 
   it('extracts JSON from fenced output', async () => {
