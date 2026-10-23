@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { computeSeverity } from '@/lib/domain/severity'
-import { DebrisCategory, Detection } from '@/lib/domain/schemas'
+import { DebrisCategory, Detection, Severity } from '@/lib/domain/schemas'
 import { retrieveClauses } from '@/lib/rag/retrieve'
 import { getDb, type Db } from '@/lib/db/client'
 import { DashScopeEmbedder, type Embedder } from '@/lib/rag/embed'
@@ -47,7 +47,7 @@ export function createMcpServer(deps: McpDeps = {}) {
 
   server.registerTool('create_work_order', {
     description: '创建 mock 整改工单',
-    inputSchema: { runId: z.string(), severity: z.enum(['low', 'medium', 'high']) },
+    inputSchema: { runId: z.string(), severity: z.enum(Severity.options) },
   }, async ({ runId, severity }) => ({
     content: [{ type: 'text', text: JSON.stringify({ ticketId: `MOCK-${runId.slice(0, 8)}`, severity, mock: true }) }],
   }))
