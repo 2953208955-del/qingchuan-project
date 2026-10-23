@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { useRunStream } from '@/hooks/use-run-stream'
@@ -11,7 +12,9 @@ import { AgentTimeline } from '@/components/inspection/agent-timeline'
 import { EvidenceCanvas } from '@/components/inspection/evidence-canvas'
 import { DetectionList } from '@/components/inspection/detection-list'
 import { ClausePanel } from '@/components/inspection/clause-panel'
-import { Plan } from '@/lib/domain/schemas'
+import { ReviewQueue } from '@/components/inspection/review-queue'
+import { Plan, ReportDraft } from '@/lib/domain/schemas'
+import { parseDetections, parseImages } from '@/lib/domain/run-detail'
 
 type RunResponse = { id?: string; message?: string }
 
@@ -26,6 +29,9 @@ export default function InspectPage() {
   const [started, setStarted] = useState(false)
   const [finished, setFinished] = useState(false)
   const [finalStatus, setFinalStatus] = useState<string | null>(null)
+  // Reviewing a detection marks the stored report stale; the report API then
+  // answers 409, so surface that instead of keeping a silently outdated draft.
+  const [reportStale, setReportStale] = useState(false)
   // A ref locks the launch synchronously, before React re-renders with
   // `started`, so two clicks in one frame cannot open two streams.
   const startedRef = useRef(false)
@@ -98,6 +104,7 @@ export default function InspectPage() {
       setStarted(false)
       setFinished(false)
       setFinalStatus(null)
+      setReportStale(false)
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -133,6 +140,38 @@ export default function InspectPage() {
 
   function cancelPlan() {
     useInspectionStore.getState().setPlan(null)
+  }
+
+  // Called by the review queue after a successful PATCH: re-read the run so
+  // revised categories/statuses replace the store snapshot. The report endpoint
+  // returns 409 once a review marked it stale; flag that for the workbench.
+  async function refetchResults() {
+    const currentRunId = useInspectionStore.getState().runId
+    if (!currentRunId) return
+    try {
+      const detailRes = await fetch(`/api/runs/${currentRunId}`)
+      if (!detailRes.ok) throw new Error('读取分析结果失败')
+      const detail = (await detailRes.json()) as { images?: unknown; detections?: unknown }
+      const store = useInspectionStore.getState()
+      store.setImages(parseImages(detail.images))
+      store.setDetections(parseDetections(detail.detections))
+
+      const reportRes = await fetch(`/api/runs/${currentRunId}/report`)
+      if (reportRes.status === 409) {
+        setReportStale(true)
+        return
+      }
+      if (!reportRes.ok) return
+      const row = (await reportRes.json()) as { contentJson?: unknown }
+      if (typeof row.contentJson !== 'string') return
+      const parsedReport = ReportDraft.safeParse(JSON.parse(row.contentJson))
+      if (parsedReport.success) {
+        useInspectionStore.getState().setReport(parsedReport.data)
+        setReportStale(false)
+      }
+    } catch {
+      setError('复核已提交，但刷新识别结果失败，请刷新页面。')
+    }
   }
 
   return (
@@ -201,6 +240,16 @@ export default function InspectPage() {
           <aside className="space-y-4">
             <AgentTimeline runId={runId} finalStatus={finalStatus} />
             <DetectionList detections={detections} />
+            {finished && <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />}
+            {reportStale && (
+              <p role="status" aria-live="polite" className="text-xs text-destructive">
+                识别结果已复核修改，现有报告已过期。请前往{' '}
+                <Link href={`/reports/${runId}`} className="underline">
+                  报告页
+                </Link>{' '}
+                查看并重新生成。
+              </p>
+            )}
             <section aria-label="检索到的标准条款" className="space-y-2">
               <h2 className="text-sm font-medium">标准条款</h2>
               <ClausePanel clauses={clauses} />

@@ -9,7 +9,7 @@ const links = [
 
 export function SiteNav() {
   return (
-    <header className="border-b border-border bg-background/80 backdrop-blur">
+    <header className="border-b border-border bg-background/80 backdrop-blur print:hidden">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
         <Link href="/" className="font-semibold tracking-tight">
           清川
