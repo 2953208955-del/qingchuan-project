@@ -3,7 +3,7 @@ import type { VerifyIssue } from '@/lib/domain/evidence'
 import type { ReportContext, ReporterPort } from './types'
 import { generateJson } from '@/lib/ai/generate-json'
 import { getTextModel, getTextModelId } from '@/lib/ai/providers'
-import { BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
+import { BudgetExceededError, BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { REPORTER_PROMPT, PROMPT_VERSIONS } from '@/lib/ai/prompts'
 
 /**
@@ -65,7 +65,15 @@ export class DeepSeekReportGenerator implements ReporterPort {
     this.opts.budget?.add(estimateCostCny(getTextModelId(), usage))
   }
 
+  // Charging happens after the response, so without this check a run already at
+  // the cap would still make (and pay for) the call and only then fail. Refuse
+  // before the paid model request instead.
+  private ensureBudget(): void {
+    if (this.opts.budget && this.opts.budget.remaining <= 0) throw new BudgetExceededError()
+  }
+
   async draft(context: ReportContext): Promise<ReportDraft> {
+    this.ensureBudget()
     const result = await generateJson({
       model: getTextModel(),
       schema: ReportModelOutput,
@@ -77,6 +85,7 @@ export class DeepSeekReportGenerator implements ReporterPort {
   }
 
   async repair(context: ReportContext, issues: VerifyIssue[]): Promise<ReportDraft> {
+    this.ensureBudget()
     const result = await generateJson({
       model: getTextModel(),
       schema: ReportModelOutput,

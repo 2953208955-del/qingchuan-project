@@ -39,6 +39,7 @@ const modelOutput = {
 }
 
 beforeEach(() => {
+  mocks.generateJson.mockClear()
   mocks.generateJson.mockResolvedValue({
     value: modelOutput,
     usage: { inputTokens: 1_000_000, outputTokens: 0 },
@@ -65,5 +66,19 @@ describe('DeepSeekReportGenerator budget', () => {
 
     await expect(generator.draft(context)).rejects.toThrow(BudgetExceededError)
     expect(budget.spent).toBeCloseTo(2)
+  })
+
+  it.each([
+    ['exactly at the cap', 1],
+    ['over the cap', 1.5],
+  ])('refuses to call the model when spend is %s', async (_label, initialSpent) => {
+    const budget = new BudgetTracker(1, initialSpent)
+    const generator = new DeepSeekReportGenerator({ budget })
+
+    await expect(generator.draft(context)).rejects.toThrow(BudgetExceededError)
+    await expect(generator.repair(context, [])).rejects.toThrow(BudgetExceededError)
+    // No paid model request was made for either path.
+    expect(mocks.generateJson).not.toHaveBeenCalled()
+    expect(budget.spent).toBeCloseTo(initialSpent)
   })
 })

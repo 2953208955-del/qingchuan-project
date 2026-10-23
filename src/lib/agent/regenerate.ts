@@ -16,6 +16,7 @@ export type RegenerateErrorCode =
   | 'NO_DETECTIONS'
   | 'REVIEW_PENDING'
   | 'RATE_LIMITED'
+  | 'BUDGET_EXCEEDED'
   | 'REPORT_FAILED'
 
 export interface RegenerateGateError {
@@ -92,6 +93,13 @@ export async function regenerateReport(
     return fail(409, 'REVIEW_PENDING', `还需复核 ${pendingCount} 项低置信识别结果`, pendingCount)
   }
 
+  // The tracker is seeded with the persisted spend, so a run that already
+  // exhausted RUN_BUDGET_CNY can never be retried into another paid call. This
+  // must run before the gate/claim and before any retrieval or drafting.
+  if (deps.budget.remaining <= 0) {
+    return fail(409, 'BUDGET_EXCEEDED', '本次运行预算已用完，无法重新生成报告')
+  }
+
   // Cheap guards passed; only now may the route spend a rate-limit hit.
   const gateError = deps.gate?.()
   if (gateError) return fail(gateError.status, gateError.code, gateError.message)
@@ -133,8 +141,16 @@ export async function regenerateReport(
       totalCostCny: updated?.totalCostCny ?? deps.budget.spent,
     }
   } catch (error) {
+    // Persist whatever was spent before aborting (add() may have charged the
+    // over-cap call), then report a non-retryable budget failure: retrying
+    // would just re-seed from the same exhausted total.
+    if (error instanceof BudgetExceededError) {
+      const message = `预算超限：${error.message}`
+      repo.updateRun(db, runId, { status: 'failed', error: message, totalCostCny: deps.budget.spent })
+      return fail(409, 'BUDGET_EXCEEDED', message)
+    }
     const detail = error instanceof Error ? error.message : String(error)
-    const message = error instanceof BudgetExceededError ? `预算超限：${detail}` : detail || '重新生成报告失败'
+    const message = detail || '重新生成报告失败'
     repo.updateRun(db, runId, { status: 'failed', error: message, totalCostCny: deps.budget.spent })
     return fail(502, 'REPORT_FAILED', message)
   }

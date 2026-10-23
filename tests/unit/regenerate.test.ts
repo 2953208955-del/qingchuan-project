@@ -87,7 +87,7 @@ function setup(opts: {
 
 function deps(budget = new BudgetTracker(1, 0.1)): RegenerateDeps {
   return {
-    retrieval: { retrieve: async () => ({ clauses: [], noEvidence: true }) },
+    retrieval: { retrieve: vi.fn(async () => ({ clauses: [], noEvidence: true })) },
     reporter: {
       draft: vi.fn(async (context: ReportContext) => {
         budget.add(0.05)
@@ -239,5 +239,48 @@ describe('regenerateReport', () => {
     expect(repo.getRun(db, runId)?.status).toBe('awaiting_review')
     expect(repo.getLatestReport(db, runId)?.version).toBe(1)
     expect(vi.mocked(d.reporter.draft)).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['exactly at the cap', 1],
+    ['over the cap', 1.5],
+  ])('rejects before any paid call when persisted spend is %s', async (_label, totalCostCny) => {
+    const { db, runId } = setup({ reviewStatus: 'confirmed' })
+    repo.updateRun(db, runId, { totalCostCny })
+    // Same seeding the route does: tracker resumes from the persisted total.
+    const d = deps(new BudgetTracker(1, repo.getRun(db, runId)!.totalCostCny))
+    let gateCalls = 0
+
+    const outcome = await regenerateReport(db, runId, {
+      ...d,
+      gate: () => {
+        gateCalls++
+        return null
+      },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, status: 409, code: 'BUDGET_EXCEEDED' })
+    // No retrieval, no draft/repair, no rate-limit hit, no claim.
+    expect(vi.mocked(d.retrieval.retrieve)).not.toHaveBeenCalled()
+    expect(vi.mocked(d.reporter.draft)).not.toHaveBeenCalled()
+    expect(vi.mocked(d.reporter.repair)).not.toHaveBeenCalled()
+    expect(gateCalls).toBe(0)
+    expect(repo.getRun(db, runId)?.status).toBe('awaiting_review')
+    expect(repo.getLatestReport(db, runId)?.version).toBe(1)
+  })
+
+  it('maps a mid-run budget abort to 409 BUDGET_EXCEEDED and persists spend', async () => {
+    const { db, runId } = setup({ reviewStatus: 'confirmed' })
+    // Remaining 0.02 passes the pre-call guard; the reporter's 0.05 charge
+    // then crosses the cap, which must not surface as a retryable 502.
+    const budget = new BudgetTracker(0.12, 0.1)
+
+    const outcome = await regenerateReport(db, runId, deps(budget))
+
+    expect(outcome).toMatchObject({ ok: false, status: 409, code: 'BUDGET_EXCEEDED' })
+    const run = repo.getRun(db, runId)
+    expect(run?.status).toBe('failed')
+    expect(run?.totalCostCny).toBeCloseTo(0.15)
+    expect(repo.getLatestReport(db, runId)?.version).toBe(1)
   })
 })
