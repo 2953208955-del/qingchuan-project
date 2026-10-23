@@ -30,7 +30,7 @@ const highlights = [
   },
   {
     title: "知识库引用",
-    body: "处置建议引用知识库条目，保留来源与版本，方便追溯依据。",
+    body: "处置建议引用知识库条目，保留标准来源与条款号，方便追溯依据。",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function Home() {
         <span className="inline-flex items-center rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
           多模态巡检 Agent
         </span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+        <h1 className="mt-4 font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
           清川 · AI 河湖垃圾巡检
         </h1>
         <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
