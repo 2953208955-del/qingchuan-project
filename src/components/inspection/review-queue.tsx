@@ -81,7 +81,13 @@ export function ReviewQueue({
         const busy = busyIds.has(detection.id)
         const correction = corrections[detection.id] ?? ''
         return (
-          <div key={detection.id} data-review-id={detection.id} className="space-y-2 rounded-lg border border-border p-2 text-sm">
+          <div
+            key={detection.id}
+            data-review-id={detection.id}
+            role="group"
+            aria-label={`${label}复核项`}
+            className="space-y-2 rounded-lg border border-border p-2 text-sm"
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 {label}

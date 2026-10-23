@@ -17,6 +17,7 @@ export function ReportPreview({
   stale,
   interactive = true,
   printHref,
+  showExport = true,
 }: {
   report: ReportDraft
   stale: boolean
@@ -24,6 +25,9 @@ export function ReportPreview({
   // rendered as plain chips there instead of dead buttons.
   interactive?: boolean
   printHref?: string
+  // The print route owns its single print affordance (PrintButton), so it
+  // suppresses the preview's export button instead of showing two.
+  showExport?: boolean
 }) {
   const selectedClaim = useInspectionStore(s => s.selectedClaimId)
 
@@ -112,21 +116,23 @@ export function ReportPreview({
         </p>
         {stale && (
           <p role="alert" className="text-destructive">
-            识别结果已修改，当前报告已过期，请重新生成。
+            识别结果已修改，当前报告已过期，请返回工作台重新发起巡检。
           </p>
         )}
       </footer>
 
-      <div className="flex gap-2 print:hidden">
-        <button
-          type="button"
-          onClick={exportReport}
-          disabled={stale}
-          className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          导出 PDF
-        </button>
-      </div>
+      {showExport && (
+        <div className="flex gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={exportReport}
+            disabled={stale}
+            className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            导出 PDF
+          </button>
+        </div>
+      )}
     </article>
   )
 }

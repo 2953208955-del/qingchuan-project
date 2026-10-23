@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { useRunStream } from '@/hooks/use-run-stream'
@@ -13,8 +12,8 @@ import { EvidenceCanvas } from '@/components/inspection/evidence-canvas'
 import { DetectionList } from '@/components/inspection/detection-list'
 import { ClausePanel } from '@/components/inspection/clause-panel'
 import { ReviewQueue } from '@/components/inspection/review-queue'
-import { Plan, ReportDraft } from '@/lib/domain/schemas'
-import { parseDetections, parseImages } from '@/lib/domain/run-detail'
+import { fetchRunResults } from '@/lib/api/run-results'
+import { Plan } from '@/lib/domain/schemas'
 
 type RunResponse = { id?: string; message?: string }
 
@@ -143,32 +142,18 @@ export default function InspectPage() {
   }
 
   // Called by the review queue after a successful PATCH: re-read the run so
-  // revised categories/statuses replace the store snapshot. The report endpoint
-  // returns 409 once a review marked it stale; flag that for the workbench.
+  // revised categories/statuses replace the store snapshot. A 409 from the
+  // report endpoint means the review marked the report stale.
   async function refetchResults() {
     const currentRunId = useInspectionStore.getState().runId
     if (!currentRunId) return
     try {
-      const detailRes = await fetch(`/api/runs/${currentRunId}`)
-      if (!detailRes.ok) throw new Error('读取分析结果失败')
-      const detail = (await detailRes.json()) as { images?: unknown; detections?: unknown }
+      const results = await fetchRunResults(currentRunId)
       const store = useInspectionStore.getState()
-      store.setImages(parseImages(detail.images))
-      store.setDetections(parseDetections(detail.detections))
-
-      const reportRes = await fetch(`/api/runs/${currentRunId}/report`)
-      if (reportRes.status === 409) {
-        setReportStale(true)
-        return
-      }
-      if (!reportRes.ok) return
-      const row = (await reportRes.json()) as { contentJson?: unknown }
-      if (typeof row.contentJson !== 'string') return
-      const parsedReport = ReportDraft.safeParse(JSON.parse(row.contentJson))
-      if (parsedReport.success) {
-        useInspectionStore.getState().setReport(parsedReport.data)
-        setReportStale(false)
-      }
+      store.setImages(results.images)
+      store.setDetections(results.detections)
+      store.setReport(results.report)
+      setReportStale(results.reportStale)
     } catch {
       setError('复核已提交，但刷新识别结果失败，请刷新页面。')
     }
@@ -243,11 +228,7 @@ export default function InspectPage() {
             {finished && <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />}
             {reportStale && (
               <p role="status" aria-live="polite" className="text-xs text-destructive">
-                识别结果已复核修改，现有报告已过期。请前往{' '}
-                <Link href={`/reports/${runId}`} className="underline">
-                  报告页
-                </Link>{' '}
-                查看并重新生成。
+                识别结果已复核修改，现有报告已过期，请返回工作台重新发起巡检。
               </p>
             )}
             <section aria-label="检索到的标准条款" className="space-y-2">
