@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/layout/app-shell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "清川 · 河湖垃圾巡检 Agent",
-  description: "拍照即巡检：可追溯证据的河湖垃圾多模态巡检 Agent",
+  title: "清川 · AI 河湖垃圾巡检",
+  description: "拍照即巡检，证据可追溯：可审计的河湖垃圾多模态巡检 Agent",
 };
 
 export default function RootLayout({
@@ -27,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
