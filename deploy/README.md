@@ -88,7 +88,7 @@ pm2 startup   # 按提示执行输出的命令，配置开机自启
 `ecosystem.config.cjs` 的关键配置：
 
 - `cwd: /opt/qingchuan`
-- `next start -p 3000`
+- `next start -H 127.0.0.1 -p 3000`（只绑定回环地址，公网流量必须经 Nginx）
 - `NODE_ENV=production`、`DATA_DIR=/opt/qingchuan/data`
 - `instances: 1`（SQLite 单写者，不要开多实例）
 - `max_memory_restart: 1G`
@@ -116,7 +116,9 @@ sudo systemctl reload nginx
 
 - `client_max_body_size 20m`（应用单图上限 15MB）
 - `proxy_buffering off` + `proxy_read_timeout 300s`（SSE 分析流不被缓冲/截断）
-- `X-Forwarded-For` / `X-Real-IP`（应用的限流器取 X-Forwarded-For 第一跳，缺少时所有用户会被当成同一个 `local`）
+- `X-Forwarded-For` 覆盖为 `$remote_addr`、`X-Real-IP`（应用的限流器取 XFF 第一跳，缺少时所有用户会被当成同一个 `local`）。
+  这假设 Nginx 是唯一入口（可信代理）；若前面还有 CDN/负载均衡，应改用
+  `$proxy_add_x_forwarded_for`，并只信任该上游，否则客户端可伪造 XFF 绕过限流。
 
 申请 HTTPS 证书（自动续期）：
 
@@ -126,30 +128,53 @@ sudo certbot --nginx -d your-domain.example.com
 sudo certbot renew --dry-run
 ```
 
-服务器安全组/防火墙只放行 22、80、443；3000 端口仅监听本机，不直接暴露公网。
+服务器安全组/防火墙只放行 22、80、443；Next.js 通过 `-H 127.0.0.1` 只监听回环地址，
+3000 端口不暴露公网，所有外部流量必须经 Nginx。
 
-## 7. 数据备份
+## 7. 数据备份与恢复
 
-`DATA_DIR` 下有 `qingchuan.db`（含 WAL）和 `uploads/`。SQLite 不要直接 `cp` 正在写入的数据库，
-使用 `.backup` 做一致性快照；上传目录单独打包：
+`DATA_DIR` 下有 `qingchuan.db`（含 WAL）和 `uploads/`。仓库提供 `deploy/backup.sh`：
+用 SQLite `.backup` 做一致性快照（不要直接 `cp` 正在写入的数据库），并把上传目录打包；
+默认保留 30 天，只清理脚本自己命名规则下的过期文件。
 
 ```bash
+chmod +x /opt/qingchuan/deploy/backup.sh
 sudo mkdir -p /var/backups/qingchuan
 sudo chown "$USER":"$USER" /var/backups/qingchuan
-sqlite3 /opt/qingchuan/data/qingchuan.db \
-  ".backup '/var/backups/qingchuan/qingchuan-$(date +%F).db'"
-tar czf "/var/backups/qingchuan/uploads-$(date +%F).tar.gz" \
-  -C /opt/qingchuan/data uploads
+
+# 手动执行一次（脚本默认 DATA_DIR=/opt/qingchuan/data）
+/opt/qingchuan/deploy/backup.sh
 ```
 
-以应用运行用户加入 crontab（每天 03:15）：
+以应用运行用户加入 crontab（每天 03:15）。脚本内部处理日期，**crontab 行中不要写 `%`**：
 
 ```cron
-15 3 * * * sqlite3 /opt/qingchuan/data/qingchuan.db ".backup '/var/backups/qingchuan/qingchuan-$(date +%F).db'" && tar czf "/var/backups/qingchuan/uploads-$(date +%F).tar.gz" -C /opt/qingchuan/data uploads
+15 3 * * * /opt/qingchuan/deploy/backup.sh >> /var/backups/qingchuan/backup.log 2>&1
 ```
 
-建议保留 14–30 天，并定期把备份同步到另一台机器或对象存储。
-数据库结构变更、升级版本、迁移服务器之前都要先手动备份。
+可用环境变量覆盖默认值，例如
+`DATA_DIR=/data/qingchuan BACKUP_DIR=/backup RETENTION_DAYS=14 /opt/qingchuan/deploy/backup.sh`。
+建议定期把备份同步到另一台机器或对象存储。
+
+### 恢复步骤
+
+1. 选择**同一时间戳**的 `qingchuan-*.db` 与 `uploads-*.tar.gz`（两者来自同一次备份）。
+2. 停止应用：`pm2 stop qingchuan`。
+3. 移走当前库并清理 WAL/SHM，再复制备份：
+   ```bash
+   cd /opt/qingchuan/data
+   mv qingchuan.db qingchuan.db.before-restore
+   rm -f qingchuan.db-wal qingchuan.db-shm
+   cp /var/backups/qingchuan/qingchuan-YYYYMMDD-HHMMSS.db qingchuan.db
+   ```
+4. 恢复上传目录：
+   ```bash
+   rm -rf /opt/qingchuan/data/uploads
+   tar xzf /var/backups/qingchuan/uploads-YYYYMMDD-HHMMSS.tar.gz -C /opt/qingchuan/data
+   ```
+5. 启动并检查：`pm2 start qingchuan`，然后确认任务列表与图片接口正常。
+
+数据库结构变更、升级版本、迁移服务器之前都要先手动执行一次备份。
 
 ## 8. MCP Server（stdio）
 

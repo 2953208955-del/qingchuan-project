@@ -119,7 +119,7 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 1. `npm ci`、复制 `.env.example` 为 `.env` 并填入密钥，设置 `DATA_DIR=/opt/qingchuan/data`；
 2. `npm run db:push`、`npm run ingest`、`npm run build`；
 3. `pm2 start deploy/ecosystem.config.cjs` 并 `pm2 save`；
-4. 用 `deploy/nginx.conf.example` 配置反向代理（20MB 请求体、SSE 关闭缓冲、透传 `X-Forwarded-For`），再用 certbot 启用 HTTPS；
+4. 用 `deploy/nginx.conf.example` 配置反向代理（20MB 请求体、SSE 关闭缓冲、`X-Forwarded-For` 覆盖为真实客户端地址），再用 certbot 启用 HTTPS；
 5. 每日备份 SQLite 与上传目录。
 
 完整步骤、备份脚本与 MCP 配置见 [deploy/README.md](deploy/README.md)。
@@ -140,7 +140,7 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 
 - 上传照片与本地 SQLite 数据库都保存在部署机器上（`DATA_DIR`），不会长期上传到第三方存储。
 - **只有在执行分析任务时，图片才会被发送到云端视觉 API**（DashScope Qwen-VL）；文本指令与检索内容会发送到对应的云端文本/Embedding API。
-- 请勿拍摄可识别人脸、车牌等个人信息；如不可避免，请先打码。EXIF 可按需剥离。
+- 请勿拍摄可识别人脸、车牌等个人信息；如不可避免，请先打码。应用会原样保存上传的图片字节，**不会自动剥离 EXIF/GPS**，请在**上传前自行移除**。
 - API Key 只保存在服务器的 `.env` 中，权限 600，不进入 Git；演示样例图需登记来源与许可证。
 
 ## 团队
