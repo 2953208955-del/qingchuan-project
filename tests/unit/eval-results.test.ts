@@ -21,6 +21,14 @@ describe('eval results file', () => {
     expect(readResults(file)).toEqual({})
   })
 
+  it('reads an empty results file as an empty document', () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, '  \n', 'utf8')
+
+    expect(readResults(file)).toEqual({})
+    expect(writeResults('rag', { recallAt5: 1 }, file).rag).toEqual({ recallAt5: 1 })
+  })
+
   it('creates parent directories and writes a valid document with generatedAt', () => {
     const document = writeResults('detection', { precision: 0.5 }, file)
 
@@ -43,6 +51,16 @@ describe('eval results file', () => {
     expect(third.agent).toEqual({ successRate: 0.75 })
     expect(Date.parse(third.generatedAt ?? '')).toBeGreaterThanOrEqual(Date.parse(first.generatedAt ?? ''))
     expect(readResults(file)).toEqual(third)
+  })
+
+  it('overwrites an existing section while preserving the others', () => {
+    writeResults('detection', { f1: 0.1 }, file)
+    writeResults('rag', { recallAt5: 0.5 }, file)
+    const document = writeResults('detection', { f1: 0.9 }, file)
+
+    expect(document.detection).toEqual({ f1: 0.9 })
+    expect(document.rag).toEqual({ recallAt5: 0.5 })
+    expect(readResults(file)).toEqual(document)
   })
 
   it('leaves no temporary files behind', () => {

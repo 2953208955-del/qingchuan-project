@@ -43,6 +43,9 @@ yarn-error.log*
 next-env.d.ts
 
 # local runtime data and test output
-data/
+data/*
+!data/eval/
+data/eval/*
+!data/eval/results.json
 .playwright/
 test-results/

@@ -5,7 +5,7 @@ import { clauses } from '../src/lib/db/schema'
 import { DashScopeEmbedder } from '../src/lib/rag/embed'
 import { DashScopeReranker } from '../src/lib/rag/rerank'
 import { retrieveClauses } from '../src/lib/rag/retrieve'
-import { writeResults } from '../src/lib/eval/results'
+import { round, writeResults } from '../src/lib/eval/results'
 
 type Question = { question: string; expectedClause: string }
 
@@ -40,11 +40,20 @@ function readQuestions(): Question[] {
   })
 }
 
-function round(value: number): number {
-  return Math.round(value * 1e6) / 1e6
+// Clause numbers are only unique within a standard, so a hit must match the
+// full standardNo + clauseNo key.
+function clauseKey(standardNo: string, clauseNo: string): string {
+  return JSON.stringify([standardNo, clauseNo])
 }
 
 async function main() {
+  if (process.argv.includes('--dry-run')) {
+    throw new Error(
+      'RAG 评测不支持 --dry-run：dry-run 仅用于检测评测的匹配管线验证。' +
+        '请直接运行 npm run eval:rag（需要 DASHSCOPE_API_KEY 和已 ingest 的知识库）。',
+    )
+  }
+
   const apiKey = process.env.DASHSCOPE_API_KEY?.trim() ?? ''
   if (!apiKey) {
     throw new Error('缺少 DASHSCOPE_API_KEY，无法运行真实 RAG 评测。请配置密钥后重试。')
@@ -53,20 +62,42 @@ async function main() {
   const questions = readQuestions()
   const db = getDb()
 
-  let clauseCount: number
+  let clauseRows: { standardNo: string; clauseNo: string }[]
   try {
-    clauseCount = db.select({ id: clauses.id }).from(clauses).all().length
+    clauseRows = db.select({ standardNo: clauses.standardNo, clauseNo: clauses.clauseNo }).from(clauses).all()
   } catch (error) {
     throw new Error(
       '无法读取知识库 clauses 表，数据库可能尚未初始化。' +
         `请先运行 npm run db:push，再运行 npm run ingest（详情：${error instanceof Error ? error.message : String(error)}）。`,
     )
   }
-  if (clauseCount === 0) {
+  if (clauseRows.length === 0) {
     throw new Error(
       '知识库没有任何条款（clauses 表为空），无法评测。' +
         '请先运行 npm run db:push，再运行 npm run ingest 写入种子语料后重试。',
     )
+  }
+
+  const expectedKeys = new Map<string, Set<string>>()
+  for (const row of clauseRows) {
+    const keys = expectedKeys.get(row.clauseNo) ?? new Set<string>()
+    keys.add(clauseKey(row.standardNo, row.clauseNo))
+    expectedKeys.set(row.clauseNo, keys)
+  }
+  for (const [index, item] of questions.entries()) {
+    const keys = expectedKeys.get(item.expectedClause)
+    if (!keys) {
+      throw new Error(
+        `RAG 评测题目第 ${index + 1} 题的 expectedClause "${item.expectedClause}" 不在知识库中。` +
+          '请检查 tests/eval/rag-questions.json 与已 ingest 的语料（先运行 npm run db:push，再运行 npm run ingest）。',
+      )
+    }
+    if (keys.size > 1) {
+      throw new Error(
+        `RAG 评测题目第 ${index + 1} 题的 expectedClause "${item.expectedClause}" 在知识库中对应多个标准，` +
+          '无法按 standardNo + clauseNo 唯一匹配。请只 ingest 评测所用的语料，或先消除标准冲突。',
+      )
+    }
   }
 
   const deps = {
@@ -87,7 +118,8 @@ async function main() {
           (error instanceof Error ? error.message : String(error)),
       )
     }
-    const hit = result.clauses.some(clause => clause.clauseNo === item.expectedClause)
+    const expected = expectedKeys.get(item.expectedClause)!
+    const hit = result.clauses.some(clause => expected.has(clauseKey(clause.standardNo, clause.clauseNo)))
     if (hit) hits++
     details.push({
       question: item.question,

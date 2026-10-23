@@ -1,6 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+export const DEFAULT_VISION_MODEL = 'qwen2.5-vl-max-latest'
+
+export function round(value: number): number {
+  return Math.round(value * 1e6) / 1e6
+}
+
 export type EvalSection = 'detection' | 'rag' | 'agent'
 
 export type ResultsDocument = {

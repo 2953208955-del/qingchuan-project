@@ -1,20 +1,27 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { matchDetections, type DetectionLike } from '../src/lib/eval/metrics'
-import { writeResults } from '../src/lib/eval/results'
+import { DEFAULT_VISION_MODEL, round, writeResults } from '../src/lib/eval/results'
 import { BBox, DebrisCategory } from '../src/lib/domain/schemas'
 import { QwenVisionAnalyzer } from '../src/lib/vision/qwen'
 
-type Annotation = { category: DebrisCategory; bbox: { x: number; y: number; w: number; h: number } }
+type Bbox = { x: number; y: number; w: number; h: number }
+// Predictions may be unlocalized (bbox null); matchDetections counts those as
+// false positives, so they must reach it instead of being filtered out.
+type Annotation = { category: DebrisCategory; bbox: Bbox | null }
 type Fixture = { image: string; gt: Annotation[]; pred?: Annotation[] }
 
 const ROOT = process.cwd()
 const FIXTURE_FILE = path.resolve(ROOT, 'tests/eval/detection-fixtures.json')
 const MIN_FIXTURES = 3
 const IOU_THRESHOLD = 0.5
-const DEFAULT_VISION_MODEL = 'qwen2.5-vl-max-latest'
 
-function validateAnnotations(value: unknown, field: string, fixtureIndex: number): Annotation[] {
+function validateAnnotations(
+  value: unknown,
+  field: string,
+  fixtureIndex: number,
+  allowNullBbox: boolean,
+): Annotation[] {
   if (!Array.isArray(value)) {
     throw new Error(`检测夹具第 ${fixtureIndex + 1} 项的 ${field} 必须是数组`)
   }
@@ -27,11 +34,12 @@ function validateAnnotations(value: unknown, field: string, fixtureIndex: number
           `${JSON.stringify(record.category)}。允许值：${DebrisCategory.options.join(', ')}`,
       )
     }
-    const bbox = BBox.safeParse(record.bbox)
+    const bbox = allowNullBbox ? BBox.nullable().safeParse(record.bbox) : BBox.safeParse(record.bbox)
     if (!bbox.success) {
       throw new Error(
         `检测夹具第 ${fixtureIndex + 1} 项 ${field}[${annotationIndex}] 的 bbox 无效：` +
-          `${JSON.stringify(record.bbox)}。需为归一化坐标 { x, y, w, h }（0–1，且不越界）`,
+          `${JSON.stringify(record.bbox)}。需为归一化坐标 { x, y, w, h }（0–1，且不越界）` +
+          (allowNullBbox ? '，或 null（无法定位的预测）' : ''),
       )
     }
     return { category: category.data, bbox: bbox.data }
@@ -70,22 +78,20 @@ function readFixtures(): Fixture[] {
     }
     return {
       image: record.image.trim(),
-      gt: validateAnnotations(record.gt, 'gt', index),
-      pred: record.pred === undefined ? undefined : validateAnnotations(record.pred, 'pred', index),
+      // Ground truth must be localizable; predictions may legitimately have no bbox.
+      gt: validateAnnotations(record.gt, 'gt', index, false),
+      pred: record.pred === undefined ? undefined : validateAnnotations(record.pred, 'pred', index, true),
     }
   })
 }
 
-// Fixtures may name a bare file under public/samples or a repo-relative path.
-// Resolve once so every check and the analyzer see the same absolute path.
+// Any path separator means the fixture gave a repo-relative path; only a bare
+// filename is shorthand for public/samples/<name>. Resolve once so every check
+// and the analyzer see the same absolute path.
 function resolveSamplePath(image: string): string {
   if (path.isAbsolute(image)) return image
-  if (image.startsWith('public/') || image.startsWith('public\\')) return path.resolve(ROOT, image)
+  if (image.includes('/') || image.includes('\\')) return path.resolve(ROOT, image)
   return path.resolve(ROOT, 'public/samples', image)
-}
-
-function round(value: number): number {
-  return Math.round(value * 1e6) / 1e6
 }
 
 async function main() {
@@ -132,7 +138,7 @@ async function main() {
       bbox: annotation.bbox,
     }))
 
-    let predicted: { category: DebrisCategory; bbox: { x: number; y: number; w: number; h: number } }[]
+    let predicted: Annotation[]
     if (dryRun) {
       predicted = fixture.pred ?? []
     } else {
@@ -146,9 +152,9 @@ async function main() {
             '本次评测未写入结果，请检查密钥、模型配置与网络后重试。',
         )
       }
-      predicted = result.detections
-        .filter(detection => detection.bbox !== null)
-        .map(detection => ({ category: detection.category, bbox: detection.bbox! }))
+      // Keep bbox-less detections: matchDetections counts them as fp, and
+      // dropping them here would inflate precision on clean images.
+      predicted = result.detections.map(detection => ({ category: detection.category, bbox: detection.bbox }))
     }
 
     const pred: DetectionLike[] = predicted.map((annotation, annotationIndex) => ({
