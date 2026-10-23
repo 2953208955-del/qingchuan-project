@@ -1,0 +1,56 @@
+import { describe, it, expect, vi } from 'vitest'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { QwenVisionAnalyzer } from '@/lib/vision/qwen'
+
+const imagePath = (() => {
+  const p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'qc-')), 'a.png')
+  fs.writeFileSync(p, Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+  return p
+})()
+
+function response(content: string, status = 200) {
+  return new Response(JSON.stringify({ choices: [{ message: { content } }], usage: { prompt_tokens: 100, completion_tokens: 50 } }), { status })
+}
+
+describe('QwenVisionAnalyzer', () => {
+  it('parses valid JSON', async () => {
+    const fetchImpl = vi.fn(async () => response('{"detections":[{"category":"plastic_bottle","material":"PET","confidence":0.9,"bbox":{"x":0.1,"y":0.1,"w":0.2,"h":0.2},"description":"塑料瓶"}]}'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(false)
+    expect(result.detections[0].category).toBe('plastic_bottle')
+  })
+
+  it('extracts JSON from fenced output', async () => {
+    const fetchImpl = vi.fn(async () => response('```json\n{"detections":[]}\n```'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(false)
+    expect(result.detections).toEqual([])
+  })
+
+  it('retries once then abstains on invalid JSON', async () => {
+    const fetchImpl = vi.fn(async () => response('not json'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(result.abstained).toBe(true)
+  })
+
+  it('abstains after a 500 on both attempts', async () => {
+    const fetchImpl = vi.fn(async () => new Response('err', { status: 500 }))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(true)
+  })
+
+  it('accumulates usage from both HTTP 200 attempts when abstaining', async () => {
+    const fetchImpl = vi.fn(async () => response('not json'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(true)
+    expect(result.usage).toEqual({ inputTokens: 200, outputTokens: 100 })
+  })
+})
