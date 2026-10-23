@@ -52,8 +52,12 @@ export class QwenVisionAnalyzer implements VisionPort {
     // unusable, so usage is accumulated across attempts and kept on abstention.
     let inputTokens = 0
     let outputTokens = 0
+    // The abstention reason describes the last attempt: a timeout is an
+    // infrastructure failure, not an unparseable model response.
+    let lastTimedOut = false
 
     for (let attempt = 0; attempt < 2; attempt++) {
+      lastTimedOut = false
       try {
         const res = await fetchImpl(`${DASHSCOPE_BASE_URL}/chat/completions`, {
           method: 'POST',
@@ -87,14 +91,15 @@ export class QwenVisionAnalyzer implements VisionPort {
             usage: { inputTokens, outputTokens },
           }
         }
-      } catch {
+      } catch (error) {
         // 网络错误或 JSON 解析失败：进入下一次尝试
+        lastTimedOut = (error as { name?: string } | null)?.name === 'TimeoutError'
       }
     }
     return {
       detections: [],
       abstained: true,
-      reason: '模型返回无法解析，已标记为无法判定',
+      reason: lastTimedOut ? '调用超时' : '模型返回无法解析，已标记为无法判定',
       usage: { inputTokens, outputTokens },
     }
   }

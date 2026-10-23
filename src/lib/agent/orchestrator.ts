@@ -1,35 +1,14 @@
 import pLimit from 'p-limit'
-import { buildEvidenceIndex } from '@/lib/domain/evidence'
-import { computeSeverity } from '@/lib/domain/severity'
 import { scanForInjection } from '@/lib/safety/injection'
 import { BudgetExceededError, estimateCostCny } from '@/lib/ai/budget'
-import { DebrisCategory } from '@/lib/domain/schemas'
 import type { Detection, RunStatus } from '@/lib/domain/schemas'
 import type { OrchestratorDeps } from './types'
+import { finalizeReport, parseFocusCategories } from './report-pipeline'
 
-const LOW_CONFIDENCE = 0.5
 const MAX_CONCURRENCY = 4
-const CATEGORY_VALUES = new Set<string>(DebrisCategory.options)
 
 function visionModel(): string {
   return process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest'
-}
-
-// run.focusCategories is user-supplied JSON; anything malformed or outside the
-// known categories is ignored rather than allowed to break the run.
-function parseFocusCategories(raw: string | null | undefined): DebrisCategory[] {
-  if (!raw) return []
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((value): value is DebrisCategory => typeof value === 'string' && CATEGORY_VALUES.has(value))
-  } catch {
-    return []
-  }
-}
-
-function detectedCategories(detections: Detection[]): DebrisCategory[] {
-  return [...new Set(detections.map(d => d.category))]
 }
 
 function isAbortReason(reason: unknown): boolean {
@@ -176,55 +155,20 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
   if (analyzed === 0) return fail('所有图片均识别失败')
 
   try {
-    repo.updateRun(db, runId, { status: 'aggregating' })
-    const severity = computeSeverity(allDetections, analyzed)
-
-    repo.updateRun(db, runId, { status: 'retrieving' })
-    const categories = focusCategories.length > 0 ? focusCategories : detectedCategories(allDetections)
-    const { clauses } = await deps.retrieval.retrieve(run.instruction, categories)
-
-    const metrics = {
-      imageCount: analyzed,
-      detectionCount: allDetections.length,
-      weightedTotal: severity.weightedTotal,
-      intensity: severity.intensity,
-      severity: severity.overall,
-      formulaVersion: severity.formulaVersion,
-    }
-    const context = {
-      runId,
-      instruction: run.instruction,
-      location: run.location,
-      inspectedAt: deps.now().toISOString(),
+    const { status } = await finalizeReport({
+      db,
+      repo,
+      run,
       detections: allDetections,
-      metrics,
-      clauses,
-    }
-
-    repo.updateRun(db, runId, { status: 'drafting' })
-    let report = await deps.reporter.draft(context)
-    const index = buildEvidenceIndex({ detections: allDetections, clauses, metrics })
-
-    repo.updateRun(db, runId, { status: 'verifying' })
-    let verification = deps.verifier.verify(report, index)
-    if (!verification.passed) {
-      report = await deps.reporter.repair(context, verification.issues)
-      verification = deps.verifier.verify(report, index)
-    }
-
-    repo.saveReport(db, {
-      id: crypto.randomUUID(),
-      runId,
-      version: (repo.getLatestReport(db, runId)?.version ?? 0) + 1,
-      contentJson: JSON.stringify(report),
-      status: verification.passed ? 'draft' : 'needs_review',
+      analyzedImageCount: analyzed,
+      retrieval: deps.retrieval,
+      reporter: deps.reporter,
+      verifier: deps.verifier,
+      now: deps.now,
+      totalCostCny: deps.budget.spent,
     })
-
-    const hasLowConfidence = allDetections.some(d => d.confidence < LOW_CONFIDENCE)
-    const finalStatus: RunStatus = verification.passed && !hasLowConfidence ? 'completed' : 'awaiting_review'
-    repo.updateRun(db, runId, { status: finalStatus, error: null, totalCostCny: deps.budget.spent })
-    deps.emit({ type: 'done', runId, status: finalStatus })
-    return finalStatus
+    deps.emit({ type: 'done', runId, status })
+    return status
   } catch (error) {
     return fail(failureMessage(error))
   }

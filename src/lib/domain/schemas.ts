@@ -100,6 +100,9 @@ export const RunStatus = z.enum([
 ])
 export type RunStatus = z.infer<typeof RunStatus>
 
+export const ReportStatus = z.enum(['draft', 'needs_review', 'stale'])
+export type ReportStatus = z.infer<typeof ReportStatus>
+
 export const AgentStep = z.object({
   id: z.string(),
   runId: z.string(),

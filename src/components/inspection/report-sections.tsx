@@ -1,5 +1,6 @@
 import type { Detection, ReportDraft, UploadedImage } from '@/lib/domain/schemas'
 import { EvidenceCanvas } from './evidence-canvas'
+import { RegenerateButton } from './regenerate-button'
 import { ReportPreview } from './report-preview'
 
 // Shared body for the report and print routes. The print variant suppresses the
@@ -8,6 +9,7 @@ export function ReportSections({
   report,
   stale,
   exportBlocked,
+  pendingReviewCount,
   images,
   detections,
   runId,
@@ -16,6 +18,7 @@ export function ReportSections({
   report: ReportDraft
   stale: boolean
   exportBlocked: boolean
+  pendingReviewCount: number
   images: UploadedImage[]
   detections: Detection[]
   runId: string
@@ -33,6 +36,16 @@ export function ReportSections({
         printHref={printable ? undefined : `/reports/${runId}/print`}
         showExport={!printable}
       />
+
+      {!printable && exportBlocked && (
+        <section aria-label="重新生成报告" className="space-y-2 rounded-xl border border-border p-3">
+          <h2 className="text-sm font-medium">重新生成报告</h2>
+          <p className="text-xs text-muted-foreground">
+            复核完成后，由代码基于最新识别结果重新生成报告；通过校验后即可导出。
+          </p>
+          <RegenerateButton runId={runId} pendingCount={pendingReviewCount} />
+        </section>
+      )}
 
       <section aria-label="引用标准" className="space-y-2">
         <h2 className="text-sm font-medium">引用标准</h2>

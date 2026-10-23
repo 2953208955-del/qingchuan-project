@@ -56,4 +56,15 @@ describe('QwenVisionAnalyzer', () => {
     expect(result.abstained).toBe(true)
     expect(result.usage).toEqual({ inputTokens: 200, outputTokens: 100 })
   })
+
+  it('reports a timeout instead of an unparseable response', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw Object.assign(new Error('timed out'), { name: 'TimeoutError' })
+    })
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(true)
+    expect(result.reason).toBe('调用超时')
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
 })

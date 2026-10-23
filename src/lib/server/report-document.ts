@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db/client'
 import { getLatestReport, getRun, listDetections, listImages } from '@/lib/db/repo'
-import { ReportDraft } from '@/lib/domain/schemas'
+import { pendingLowConfidenceCount } from '@/lib/domain/review'
+import { ReportDraft, ReportStatus, RunStatus } from '@/lib/domain/schemas'
 import type { Detection, UploadedImage } from '@/lib/domain/schemas'
 import { parseDetections, parseImages } from '@/lib/domain/run-detail'
 
@@ -14,21 +15,19 @@ export type ReportDocument = {
   // Export stays locked until the report and every low-confidence finding have
   // passed human review; the loader is the single place that decides this.
   exportBlocked: boolean
+  pendingReviewCount: number
 }
 
-// Confidence below this is "low" (§10.5) and must not be exported unreviewed.
-export const LOW_CONFIDENCE = 0.5
-
 export function isExportBlocked(input: {
-  reportStatus: string
-  runStatus: string
+  reportStatus: ReportStatus
+  runStatus: RunStatus
   detections: Pick<Detection, 'reviewStatus' | 'confidence'>[]
 }): boolean {
   return (
     input.reportStatus === 'stale' ||
     input.reportStatus === 'needs_review' ||
     input.runStatus === 'awaiting_review' ||
-    input.detections.some(d => d.reviewStatus === 'pending' && d.confidence < LOW_CONFIDENCE)
+    pendingLowConfidenceCount(input.detections) > 0
   )
 }
 
@@ -51,6 +50,10 @@ export function loadReportDocument(id: string): ReportDocument | null {
   if (!parsed.success) return null
 
   const detections = parseDetections(listDetections(db, id))
+  // Unknown persisted statuses default to the blocking value: a row written by
+  // an older schema must never unlock export.
+  const reportStatus = ReportStatus.safeParse(row.status)
+  const runStatus = RunStatus.safeParse(run.status)
 
   return {
     run,
@@ -60,9 +63,10 @@ export function loadReportDocument(id: string): ReportDocument | null {
     detections,
     stale: row.status === 'stale',
     exportBlocked: isExportBlocked({
-      reportStatus: row.status,
-      runStatus: run.status,
+      reportStatus: reportStatus.success ? reportStatus.data : 'needs_review',
+      runStatus: runStatus.success ? runStatus.data : 'awaiting_review',
       detections,
     }),
+    pendingReviewCount: pendingLowConfidenceCount(detections),
   }
 }

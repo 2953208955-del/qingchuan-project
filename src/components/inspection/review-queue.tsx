@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { LOW_CONFIDENCE } from '@/lib/domain/review'
 import { CATEGORY_LABELS } from '@/lib/domain/schemas'
 import type { DebrisCategory, Detection } from '@/lib/domain/schemas'
 
@@ -91,7 +92,7 @@ export function ReviewQueue({
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 {label}
-                {detection.confidence < 0.5 && (
+                {detection.confidence < LOW_CONFIDENCE && (
                   <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] text-destructive">低置信度</span>
                 )}
               </span>
