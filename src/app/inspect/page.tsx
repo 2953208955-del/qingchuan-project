@@ -14,6 +14,7 @@ export default function InspectPage() {
   const [instruction, setInstruction] = useState('')
   const [location, setLocation] = useState('')
   const [planning, setPlanning] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const plan = useInspectionStore(s => s.plan)
   const images = useInspectionStore(s => s.images)
@@ -27,11 +28,13 @@ export default function InspectPage() {
 
   function updateInstruction(value: string) {
     setInstruction(value)
+    setError(null)
     invalidatePlan()
   }
 
   function updateLocation(value: string) {
     setLocation(value)
+    setError(null)
     invalidatePlan()
   }
 
@@ -40,7 +43,10 @@ export default function InspectPage() {
     // Read the images from the store at call time so a just-finished upload is
     // never missed by a stale render closure.
     const currentImages = useInspectionStore.getState().images
-    if (!instruction.trim() || currentImages.length === 0 || planning) return
+    // Never start planning while a batch is uploading, and vice versa: the
+    // dropzone is disabled while `planning`, so the upload snapshot cannot move
+    // between the request and the reset below.
+    if (!instruction.trim() || currentImages.length === 0 || planning || uploading) return
     setPlanning(true)
     try {
       const runRes = await fetch('/api/runs', {
@@ -97,18 +103,19 @@ export default function InspectPage() {
         </p>
       </header>
 
-      <UploadDropzone />
-      <InstructionInput value={instruction} onChange={updateInstruction} />
+      <UploadDropzone disabled={planning} onBusyChange={setUploading} />
+      <InstructionInput value={instruction} onChange={updateInstruction} disabled={planning} />
 
       <div className="flex flex-wrap items-start gap-4">
-        <VoiceInput onText={updateInstruction} />
+        <VoiceInput onText={updateInstruction} disabled={planning} />
         <label className="block text-sm">
           地点（选填）
           <input
             value={location}
             onChange={e => updateLocation(e.target.value)}
+            disabled={planning}
             placeholder="例如：清川河 XX 桥段"
-            className="mt-1 block w-64 rounded-lg border border-border bg-background p-2"
+            className="mt-1 block w-64 rounded-lg border border-border bg-background p-2 disabled:opacity-50"
           />
         </label>
       </div>
@@ -116,7 +123,7 @@ export default function InspectPage() {
       <button
         type="button"
         onClick={createPlan}
-        disabled={planning || !instruction.trim() || images.length === 0}
+        disabled={planning || uploading || !instruction.trim() || images.length === 0}
         className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
       >
         {planning ? '生成计划中…' : '生成计划'}
@@ -128,7 +135,9 @@ export default function InspectPage() {
         </p>
       )}
 
-      {plan && <PlanConfirm plan={plan} onConfirm={handleConfirmPlan} onCancel={cancelPlan} />}
+      {plan && (
+        <PlanConfirm plan={plan} onConfirm={handleConfirmPlan} onCancel={cancelPlan} disabled={planning} />
+      )}
     </div>
   )
 }

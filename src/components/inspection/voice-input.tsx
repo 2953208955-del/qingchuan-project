@@ -20,7 +20,7 @@ type SpeechRecognitionLike = {
   stop: () => void
 }
 
-export function VoiceInput({ onText }: { onText: (text: string) => void }) {
+export function VoiceInput({ onText, disabled = false }: { onText: (text: string) => void; disabled?: boolean }) {
   const [supported, setSupported] = useState(false)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export function VoiceInput({ onText }: { onText: (text: string) => void }) {
       <button
         type="button"
         onClick={startListening}
-        disabled={listening}
+        disabled={listening || disabled}
         aria-label={listening ? '正在聆听语音指令' : '使用语音输入巡检指令'}
         className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
       >

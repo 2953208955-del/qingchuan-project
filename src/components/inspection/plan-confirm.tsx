@@ -2,7 +2,12 @@
 
 import { CATEGORY_LABELS, type Plan } from '@/lib/domain/schemas'
 
-export function PlanConfirm({ plan, onConfirm, onCancel }: { plan: Plan; onConfirm: () => void; onCancel: () => void }) {
+export function PlanConfirm({ plan, onConfirm, onCancel, disabled = false }: {
+  plan: Plan
+  onConfirm: () => void
+  onCancel: () => void
+  disabled?: boolean
+}) {
   const categoryLabels = plan.focusCategories.map(category => CATEGORY_LABELS[category])
 
   return (
@@ -17,16 +22,18 @@ export function PlanConfirm({ plan, onConfirm, onCancel }: { plan: Plan; onConfi
         <button
           type="button"
           onClick={onConfirm}
+          disabled={disabled}
           aria-label="开始巡检（确认执行计划）"
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
         >
           开始巡检
         </button>
         <button
           type="button"
           onClick={onCancel}
+          disabled={disabled}
           aria-label="取消执行计划"
-          className="rounded-lg border border-border px-3 py-1.5 text-sm"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
         >
           取消
         </button>

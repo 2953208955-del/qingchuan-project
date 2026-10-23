@@ -28,7 +28,10 @@ async function uploadOne(file: File): Promise<UploadResponse> {
   return { filename: json.filename, path: json.path, sha256: json.sha256 }
 }
 
-export function UploadDropzone() {
+export function UploadDropzone({ disabled = false, onBusyChange }: {
+  disabled?: boolean
+  onBusyChange?: (busy: boolean) => void
+}) {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -36,10 +39,12 @@ export function UploadDropzone() {
   const images = useInspectionStore(s => s.images)
 
   async function onFiles(files: FileList | null) {
-    if (!files?.length) return
+    // Guard against a picker opened before the parent disabled uploading.
+    if (!files?.length || disabled) return
     // Snapshot before awaiting: the input may be reset while uploads run.
     const list = Array.from(files)
     setBusy(true)
+    onBusyChange?.(true)
     setError(null)
     setProgress({ done: 0, total: list.length })
 
@@ -53,10 +58,13 @@ export function UploadDropzone() {
         if (invalid) {
           failures.push(`${file.name}：${invalid}`)
         } else {
+          // Generated outside the upload try so an ID failure is never
+          // misreported as a failed upload.
+          const id = crypto.randomUUID()
           try {
             const data = await uploadOne(file)
             uploaded.push({
-              id: crypto.randomUUID(),
+              id,
               filename: data.filename,
               path: data.path,
               sha256: data.sha256,
@@ -81,6 +89,7 @@ export function UploadDropzone() {
     } finally {
       setBusy(false)
       setProgress(null)
+      onBusyChange?.(false)
       if (inputRef.current) inputRef.current.value = ''
     }
   }
@@ -93,7 +102,7 @@ export function UploadDropzone() {
         accept="image/jpeg,image/png,image/webp"
         multiple
         aria-label="选择巡检图片"
-        disabled={busy}
+        disabled={disabled || busy}
         onChange={e => onFiles(e.target.files)}
         className="block w-full text-sm disabled:opacity-50"
       />
