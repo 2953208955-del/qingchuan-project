@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export const DEFAULT_VISION_MODEL = 'qwen2.5-vl-max-latest'
+export { DEFAULT_VISION_MODEL } from '@/lib/ai/models'
 
 export function round(value: number): number {
   return Math.round(value * 1e6) / 1e6

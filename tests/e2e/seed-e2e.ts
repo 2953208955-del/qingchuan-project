@@ -53,7 +53,7 @@ const report: ReportDraft = {
     formulaVersion: 'severity-v1',
   },
   citations: [],
-  modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen2.5-vl-max-latest', promptVersion: 'reporter-v1' },
+  modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen3-vl-plus', promptVersion: 'reporter-v1' },
   limitations: ['E2E 种子数据，仅用于验收流程，不代表真实评测结果。'],
 }
 

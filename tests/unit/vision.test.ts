@@ -26,6 +26,15 @@ describe('QwenVisionAnalyzer', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal)
   })
 
+  it('asks the provider for a JSON object response', async () => {
+    const fetchImpl = vi.fn(async () => response('{"detections":[]}'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    await analyzer.analyze({ imagePath })
+    const init = (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1]
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>
+    expect(body.response_format).toEqual({ type: 'json_object' })
+  })
+
   it('extracts JSON from fenced output', async () => {
     const fetchImpl = vi.fn(async () => response('```json\n{"detections":[]}\n```'))
     const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
@@ -42,11 +51,13 @@ describe('QwenVisionAnalyzer', () => {
     expect(result.abstained).toBe(true)
   })
 
-  it('abstains after a 500 on both attempts', async () => {
+  it('abstains after a 500 on both model attempts', async () => {
     const fetchImpl = vi.fn(async () => new Response('err', { status: 500 }))
     const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
     const result = await analyzer.analyze({ imagePath })
     expect(result.abstained).toBe(true)
+    expect(result.reason).toBe('服务返回错误，已标记为无法判定')
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
   it('accumulates usage from both HTTP 200 attempts when abstaining', async () => {
@@ -65,6 +76,28 @@ describe('QwenVisionAnalyzer', () => {
     const result = await analyzer.analyze({ imagePath })
     expect(result.abstained).toBe(true)
     expect(result.reason).toBe('调用超时')
+    expect(fetchImpl).toHaveBeenCalledTimes(4)
+  })
+
+  it('reports a network failure instead of an unparseable response', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_CONNECT_TIMEOUT' } })
+    })
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(true)
+    expect(result.reason).toBe('调用失败（网络错误）')
+    expect(fetchImpl).toHaveBeenCalledTimes(4)
+  })
+
+  it('recovers when a transport failure is followed by a valid response', async () => {
+    const fetchImpl = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new TypeError('fetch failed'), { cause: { code: 'UND_ERR_SOCKET' } }))
+      .mockResolvedValue(response('{"detections":[]}'))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(false)
+    expect(result.detections).toEqual([])
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 })

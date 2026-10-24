@@ -53,7 +53,9 @@ export function buildDemoReport(): { detections: Detection[]; report: ReportDraf
     ],
     metrics,
     citations: [],
-    modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen2.5-vl-max-latest', promptVersion: 'reporter-v1' },
+    // The seed is hand-built; naming a live model here would imply a call that
+    // never happened. The badge and limitations carry the same provenance.
+    modelInfo: { textModel: '人工构造', visionModel: '未调用模型', promptVersion: 'demo-manual-v1' },
     limitations: [
       '未做面积标定',
       '2 个低置信目标待人工复核',

@@ -6,6 +6,7 @@ import { retrieveClauses } from '@/lib/rag/retrieve'
 import { getDb, type Db } from '@/lib/db/client'
 import { DashScopeEmbedder, type Embedder } from '@/lib/rag/embed'
 import { QwenVisionAnalyzer, type VisionPort } from '@/lib/vision/qwen'
+import { getVisionModelId } from '@/lib/ai/providers'
 
 export interface McpDeps {
   db?: Db
@@ -39,7 +40,7 @@ export function createMcpServer(deps: McpDeps = {}) {
   }, async ({ imagePath, hint }) => {
     const vision = deps.vision ?? new QwenVisionAnalyzer({
       apiKey: process.env.DASHSCOPE_API_KEY ?? '',
-      model: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
+      model: getVisionModelId(),
     })
     const result = await vision.analyze({ imagePath, hint })
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }

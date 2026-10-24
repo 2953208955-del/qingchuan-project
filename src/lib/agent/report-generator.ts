@@ -2,7 +2,7 @@ import { ReportDraft } from '@/lib/domain/schemas'
 import type { VerifyIssue } from '@/lib/domain/evidence'
 import type { ReportContext, ReporterPort } from './types'
 import { generateJson } from '@/lib/ai/generate-json'
-import { getTextModel, getTextModelId } from '@/lib/ai/providers'
+import { getTextModel, getTextModelId, getVisionModelId } from '@/lib/ai/providers'
 import { BudgetExceededError, BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { REPORTER_PROMPT, PROMPT_VERSIONS } from '@/lib/ai/prompts'
 import { sanitizeImageDescription } from '@/lib/safety/injection'
@@ -25,7 +25,7 @@ export function parseReportWithMetrics(raw: unknown, context: ReportContext): Re
     metrics: context.metrics,
     modelInfo: {
       textModel: getTextModelId(),
-      visionModel: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
+      visionModel: getVisionModelId(),
       promptVersion: PROMPT_VERSIONS.reporter,
     },
   })

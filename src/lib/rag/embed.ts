@@ -1,19 +1,24 @@
-import { AI_CALL_TIMEOUT_MS } from '@/lib/ai/providers'
+import { DEFAULT_EMBEDDING_MODEL } from '@/lib/ai/models'
+import { postJsonWithTransportRetry } from '@/lib/ai/post-json'
 
 export interface Embedder {
   embed(texts: string[]): Promise<number[][]>
 }
 
 export class DashScopeEmbedder implements Embedder {
-  constructor(private readonly apiKey: string, private readonly model = 'text-embedding-v3') {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly model = process.env.EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL,
+  ) {}
 
   async embed(texts: string[]): Promise<number[][]> {
-    const res = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
-      body: JSON.stringify({ model: this.model, input: texts, dimensions: 1024 }),
-      signal: AbortSignal.timeout(AI_CALL_TIMEOUT_MS),
-    })
+    const res = await postJsonWithTransportRetry(
+      'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings',
+      this.apiKey,
+      // The current embedding model rejects `dimensions`; its default output
+      // is already 1024, which is the width the knowledge base was designed for.
+      { model: this.model, input: texts },
+    )
     if (!res.ok) throw new Error(`embedding failed: ${res.status}`)
     const json = await res.json() as { data: { embedding: number[] }[] }
     return json.data.map(d => d.embedding)

@@ -7,6 +7,7 @@ vi.mock('@/lib/ai/generate-json', () => ({ generateJson: mocks.generateJson }))
 vi.mock('@/lib/ai/providers', () => ({
   getTextModel: () => ({}),
   getTextModelId: () => 'deepseek-chat',
+  getVisionModelId: () => 'qwen3-vl-plus',
 }))
 
 import { DeepSeekReportGenerator } from '@/lib/agent/report-generator'

@@ -1,6 +1,7 @@
 import pLimit from 'p-limit'
 import { scanForInjection } from '@/lib/safety/injection'
 import { BudgetExceededError, estimateCostCny } from '@/lib/ai/budget'
+import { getVisionModelId } from '@/lib/ai/providers'
 import type { Detection, RunStatus } from '@/lib/domain/schemas'
 import type { OrchestratorDeps } from './types'
 import { finalizeReport, parseFocusCategories } from './report-pipeline'
@@ -8,7 +9,7 @@ import { finalizeReport, parseFocusCategories } from './report-pipeline'
 const MAX_CONCURRENCY = 4
 
 function visionModel(): string {
-  return process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest'
+  return getVisionModelId()
 }
 
 function isAbortReason(reason: unknown): boolean {

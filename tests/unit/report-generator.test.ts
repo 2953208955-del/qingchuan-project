@@ -8,6 +8,7 @@ import { createDb } from '@/lib/db/client'
 import { clauses } from '@/lib/db/schema'
 import { ReportDraft } from '@/lib/domain/schemas'
 import { PROMPT_VERSIONS } from '@/lib/ai/prompts'
+import { DEFAULT_VISION_MODEL } from '@/lib/ai/models'
 import type { ReportContext } from '@/lib/agent/types'
 
 const context: ReportContext = {
@@ -43,7 +44,7 @@ describe('parseReportWithMetrics', () => {
     const report = parseReportWithMetrics(rawReport(), context)
     expect(report.modelInfo).toEqual({
       textModel: process.env.TEXT_MODEL ?? 'deepseek-chat',
-      visionModel: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
+      visionModel: process.env.VISION_MODEL ?? DEFAULT_VISION_MODEL,
       promptVersion: PROMPT_VERSIONS.reporter,
     })
   })

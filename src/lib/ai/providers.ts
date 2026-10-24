@@ -1,7 +1,8 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
+import { DEFAULT_TEXT_MODEL, DEFAULT_VISION_MODEL } from './models'
 
 export function getTextModelId() {
-  return process.env.TEXT_MODEL ?? 'deepseek-chat'
+  return process.env.TEXT_MODEL ?? DEFAULT_TEXT_MODEL
 }
 
 export function getTextModel() {
@@ -13,7 +14,7 @@ export function getTextModel() {
 }
 
 export function getVisionModelId() {
-  return process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest'
+  return process.env.VISION_MODEL ?? DEFAULT_VISION_MODEL
 }
 
 export const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1'

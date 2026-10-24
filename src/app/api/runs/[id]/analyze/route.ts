@@ -14,6 +14,7 @@ import {
   runBudgetFromEnv,
 } from '@/lib/ai/budget'
 import { verifyReport } from '@/lib/domain/evidence'
+import { getVisionModelId } from '@/lib/ai/providers'
 import { encodeSse } from '@/lib/agent/sse'
 import type { AgentEvent } from '@/lib/agent/types'
 import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
@@ -80,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           db, repo,
           vision: new QwenVisionAnalyzer({
             apiKey: process.env.DASHSCOPE_API_KEY ?? '',
-            model: process.env.VISION_MODEL ?? 'qwen2.5-vl-max-latest',
+            model: getVisionModelId(),
           }),
           retrieval: new RagRetrievalAdapter(
             db,

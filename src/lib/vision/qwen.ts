@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import { z } from 'zod'
 import { AI_CALL_TIMEOUT_MS, DASHSCOPE_BASE_URL } from '@/lib/ai/providers'
 import { VISION_PROMPT } from '@/lib/ai/prompts'
-import { extractJson } from '@/lib/ai/generate-json'
+import { extractJson, JsonParseError } from '@/lib/ai/generate-json'
 import { BBox, DebrisCategory } from '@/lib/domain/schemas'
 
 const VisionDetection = z.object({
@@ -52,12 +52,17 @@ export class QwenVisionAnalyzer implements VisionPort {
     // unusable, so usage is accumulated across attempts and kept on abstention.
     let inputTokens = 0
     let outputTokens = 0
-    // The abstention reason describes the last attempt: a timeout is an
-    // infrastructure failure, not an unparseable model response.
-    let lastTimedOut = false
+    // The abstention reason describes the last attempt. A timeout or a dropped
+    // connection is an infrastructure failure, not an unparseable response.
+    let lastFailure: 'timeout' | 'network' | 'http' | 'invalid' = 'invalid'
+    // Model-output failures follow the spec's single retry; transport failures
+    // get a slightly larger budget because this deployment's link to DashScope
+    // intermittently drops the first connections.
+    const MODEL_ATTEMPTS = 2
+    const TRANSPORT_ATTEMPTS = 4
+    let modelFailures = 0
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      lastTimedOut = false
+    for (let attempt = 0; attempt < TRANSPORT_ATTEMPTS; attempt++) {
       try {
         const res = await fetchImpl(`${DASHSCOPE_BASE_URL}/chat/completions`, {
           method: 'POST',
@@ -66,6 +71,9 @@ export class QwenVisionAnalyzer implements VisionPort {
           body: JSON.stringify({
             model: this.opts.model,
             temperature: 0.1,
+            // JSON mode keeps Qwen from emitting malformed objects such as
+            // {"x":0.43,0.12,0.65,0.22} (observed without it).
+            response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: VISION_PROMPT },
               { role: 'user', content: [
@@ -75,7 +83,12 @@ export class QwenVisionAnalyzer implements VisionPort {
             ],
           }),
         })
-        if (!res.ok) continue
+        if (!res.ok) {
+          lastFailure = 'http'
+          modelFailures += 1
+          if (modelFailures >= MODEL_ATTEMPTS) break
+          continue
+        }
         const json = await res.json() as {
           choices?: { message?: { content?: string } }[]
           usage?: { prompt_tokens?: number; completion_tokens?: number }
@@ -91,15 +104,32 @@ export class QwenVisionAnalyzer implements VisionPort {
             usage: { inputTokens, outputTokens },
           }
         }
+        lastFailure = 'invalid'
+        modelFailures += 1
+        if (modelFailures >= MODEL_ATTEMPTS) break
       } catch (error) {
-        // 网络错误或 JSON 解析失败：进入下一次尝试
-        lastTimedOut = (error as { name?: string } | null)?.name === 'TimeoutError'
+        if (error instanceof JsonParseError) {
+          // The provider answered but its payload was unusable: this is a
+          // model-output failure and follows the single-retry budget.
+          lastFailure = 'invalid'
+          modelFailures += 1
+          if (modelFailures >= MODEL_ATTEMPTS) break
+        } else {
+          // Transport failure: retry without consuming the model-output budget.
+          lastFailure = (error as { name?: string } | null)?.name === 'TimeoutError' ? 'timeout' : 'network'
+        }
       }
     }
     return {
       detections: [],
       abstained: true,
-      reason: lastTimedOut ? '调用超时' : '模型返回无法解析，已标记为无法判定',
+      reason: lastFailure === 'timeout'
+        ? '调用超时'
+        : lastFailure === 'network'
+          ? '调用失败（网络错误）'
+          : lastFailure === 'http'
+            ? '服务返回错误，已标记为无法判定'
+            : '模型返回无法解析，已标记为无法判定',
       usage: { inputTokens, outputTokens },
     }
   }

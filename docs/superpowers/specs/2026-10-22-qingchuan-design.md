@@ -239,9 +239,9 @@ createWorkOrder(input: {
 | 能力 | 主选 | 备选 | 用途 |
 |---|---|---|---|
 | 文本规划/报告/校验 | DeepSeek Chat | Qwen-Max | 规划、报告、Verifier 辅助 |
-| 视觉理解与定位 | Qwen2.5-VL（DashScope） | GLM-4V | 识别、分类、bbox、描述 |
-| 文本向量 | Qwen text-embedding | BGE-M3（API） | 知识库切片与查询 |
-| 重排 | gte-rerank | LLM rerank | 候选条款重排 |
+| 视觉理解与定位 | Qwen3-VL Plus（DashScope） | GLM-4V | 识别、分类、bbox、描述 |
+| 文本向量 | Qwen3.7 text-embedding | BGE-M3（API） | 知识库切片与查询 |
+| 重排 | Qwen3.7 text-rerank | LLM rerank | 候选条款重排 |
 | 内容审核 | 规则 + LLM 轻量审核 | 云内容安全 API | 输入输出安全 |
 
 第 1 周用 20 张公开图片对比 Qwen-VL 与 GLM-4V 的识别一致性、计数误差、bbox 质量、延迟与费用，用数据确定主备。

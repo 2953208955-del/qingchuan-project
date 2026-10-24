@@ -19,7 +19,7 @@ function report(overrides: Partial<ReportDraft> = {}): ReportDraft {
     title: '报告', location: null, inspectedAt: '2026-10-22T00:00:00.000Z',
     claims: [{ id: 'claim1', section: 'summary', text: '发现 1 个塑料瓶', evidenceIds: ['detection:d1'] }],
     metrics, citations: [{ standardNo: '清川SOP', clauseNo: '第3条' }],
-    modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen2.5-vl-max-latest', promptVersion: 'reporter-v1' },
+    modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen3-vl-plus', promptVersion: 'reporter-v1' },
     limitations: [],
     ...overrides,
   }

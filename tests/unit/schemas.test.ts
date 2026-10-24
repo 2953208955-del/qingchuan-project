@@ -29,7 +29,7 @@ describe('domain schemas', () => {
       claims: [{ id: 'c1', section: 'summary', text: '发现 3 个塑料瓶', evidenceIds: ['e1'] }],
       metrics: { imageCount: 1, detectionCount: 3, weightedTotal: 3.6, intensity: 3.6, severity: 'medium', formulaVersion: 'severity-v1' },
       citations: [{ standardNo: '清川SOP', clauseNo: '第2条' }],
-      modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen2.5-vl-max-latest', promptVersion: 'reporter-v1' },
+      modelInfo: { textModel: 'deepseek-chat', visionModel: 'qwen3-vl-plus', promptVersion: 'reporter-v1' },
       limitations: ['未做面积标定'],
     })
     expect(report.metrics.severity).toBe('medium')
