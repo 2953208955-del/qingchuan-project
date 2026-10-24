@@ -137,7 +137,7 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 `data/eval/results.json` 只能由真实评测运行生成，禁止手工编写或补数字。当前文件来自 2026-10-24 的真实云端运行：
 
 - **RAG**：Recall@5 = **1.00**（35 题全部命中期望条款）。
-- **Agent**：成功率 **3/4（75%）**，平均耗时约 41.1 秒。未命中的 `low-confidence` 场景是因为当前样例图在真实模型下的最低置信度为 0.75，没有产生 <0.5 的目标，复核门因此未被触发；复核 → 重新生成 → 导出的闭环由单元测试与 E2E 覆盖。
+- **Agent**：成功率 **4/4（100%）**，平均耗时约 21.9 秒（单次真实运行，2026-10-24）。场景使用不同样例图：`normal` / `no-evidence` 用 `sample-2.jpg`（无低置信目标），`low-confidence` 用 `sample-1.jpg`（含 <0.5 目标），`injection` 在读取图片前即被拒绝。模型输出具有随机性，换一次运行的具体结果可能不同；复核 → 重新生成 → 导出的闭环另有单元测试与 E2E 覆盖。
 - **检测**：尚未运行（`tests/eval/detection-fixtures.json` 仍为空），因此本 README 不宣称任何检测指标。
 
 评测夹具与诚实性规则详见 [tests/eval/README.md](tests/eval/README.md)。

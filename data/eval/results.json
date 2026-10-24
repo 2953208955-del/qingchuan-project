@@ -355,38 +355,58 @@
       }
     ]
   },
-  "generatedAt": "2026-10-24T06:43:55.104Z",
+  "generatedAt": "2026-10-24T08:10:17.437Z",
   "agent": {
-    "successRate": 0.75,
-    "avgLatencyMs": 41082,
+    "successRate": 1,
+    "avgLatencyMs": 21871,
     "details": [
       {
         "name": "normal",
+        "image": "sample-2.jpg",
         "expected": "completed",
         "actual": "completed",
         "ok": true,
-        "latencyMs": 46832
+        "latencyMs": 24388,
+        "minConfidence": 0.95,
+        "reportStatus": "draft",
+        "verifyStatus": "done",
+        "verifyIssues": []
       },
       {
         "name": "low-confidence",
+        "image": "sample-1.jpg",
         "expected": "awaiting_review",
-        "actual": "completed",
-        "ok": false,
-        "latencyMs": 58548
+        "actual": "awaiting_review",
+        "ok": true,
+        "latencyMs": 23786,
+        "minConfidence": 0.45,
+        "reportStatus": "needs_review",
+        "verifyStatus": "done",
+        "verifyIssues": []
       },
       {
         "name": "no-evidence",
+        "image": "sample-2.jpg",
         "expected": "completed",
         "actual": "completed",
         "ok": true,
-        "latencyMs": 58946
+        "latencyMs": 39307,
+        "minConfidence": 0.95,
+        "reportStatus": "draft",
+        "verifyStatus": "done",
+        "verifyIssues": []
       },
       {
         "name": "injection",
+        "image": "sample-1.jpg",
         "expected": "failed",
         "actual": "failed",
         "ok": true,
         "latencyMs": 1,
+        "minConfidence": null,
+        "reportStatus": null,
+        "verifyStatus": null,
+        "verifyIssues": [],
         "error": "指令包含可疑内容"
       }
     ]
