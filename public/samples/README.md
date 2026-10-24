@@ -4,9 +4,9 @@
 
 | 文件名 | 内容要求 | 用途 |
 | --- | --- | --- |
-| `sample-1.jpg` | 河岸或水面，能看清至少 2 个塑料瓶和 1 个塑料袋 | 演示任务第 1 张；也是 `npm run eval:agent` 的输入图 |
-| `sample-2.jpg` | 岸线或浅水处，包含废弃渔网/渔具，最好另有玻璃瓶或包装袋 | 演示任务第 2 张（含低置信待复核目标） |
-| `sample-3.jpg` | 水面漂浮泡沫碎块，最好另有塑料瓶 | 演示任务第 3 张（含低置信待复核目标） |
+| `sample-1.jpg` | 岸线垃圾堆积，含塑料瓶、塑料袋、渔网等，能看清多个目标 | 演示任务第 1 张；也是 `npm run eval:agent` 的输入图 |
+| `sample-2.jpg` | 岸线废弃渔网/渔具 | 演示任务第 2 张（含低置信待复核目标） |
+| `sample-3.jpg` | 单个塑料瓶（岸边或浅水处） | 演示任务第 3 张（含低置信待复核目标） |
 
 三张图只用于本地/演示环境。演示种子脚本会读取真实字节、计算 SHA-256，并在
 `DATA_DIR/uploads/` 下复制出稳定的 `demo-sample-*.jpg` 文件，不会覆盖用户上传的同名文件。
@@ -20,12 +20,12 @@
 
 | 文件名 | 拍摄者/作者 | 来源链接或"自摄" | 许可证 | 拍摄日期 | 授权/同意情况 |
 | --- | --- | --- | --- | --- | --- |
-| `sample-1.jpg` | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| `sample-1.jpg` | NOAA Marine Debris Program | https://marinedebris.noaa.gov/images/marine-debris-hawaii | Public Domain（美国联邦政府作品，NOAA） | 未标注（NOAA 页面） | NOAA 要求注明来源；画面无人像 |
 | `sample-2.jpg` | LCDR Eric Johnson（NOAA Corps） | https://www.noaa.gov/noaa-collections/photo-library/fish1969jpg | Public Domain（美国联邦政府作品，NOAA Photo Library） | 2008-08-01 | NOAA 要求注明来源；画面无人像 |
-| `sample-3.jpg` | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| `sample-3.jpg` | NOAA Marine Debris Program | https://marinedebris.noaa.gov/monitoring-photo-gallery/plastic/plastic-beverage-bottles | Public Domain（美国联邦政府作品，NOAA） | 未标注（NOAA 页面） | 仅使用页面标注 NOAA 的图；注明来源 |
 
-`sample-1.jpg` 与 `sample-3.jpg` 的来源/许可证仍待拍摄者确认；确认并填写上表之前，
-这两张图不提交到公开仓库。
+`sample-3.jpg` 当前为 NOAA 图库提供的 220×220 版本；录制演示视频前如能获取同页高清原图，
+建议替换（替换后重跑 `npm run seed` 即可）。
 
 ## 隐私要求
 
