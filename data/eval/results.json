@@ -1,0 +1,394 @@
+{
+  "rag": {
+    "recallAt5": 1,
+    "total": 35,
+    "details": [
+      {
+        "question": "这个巡检规范适用于哪些水体？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第2条",
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "河湖岸线垃圾巡检适用什么标准？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第6条",
+          "清川SOP 第2条",
+          "清川SOP 第3条",
+          "清川SOP 第5条"
+        ]
+      },
+      {
+        "question": "近岸水域的垃圾巡检是否适用该 SOP？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第3条",
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "小型水体垃圾巡检该参照哪份规范？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第6条",
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "基层河长进行垃圾巡检应遵循什么规范？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第2条",
+          "清川SOP 第6条",
+          "清川SOP 第5条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "志愿者参与河湖保洁时可以依据这份 SOP 吗？",
+        "expected": "第1条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第1条",
+          "清川SOP 第5条",
+          "清川SOP 第2条",
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "塑料瓶属于哪一类垃圾？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第5条"
+        ]
+      },
+      {
+        "question": "巡检时垃圾分为哪几类？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第1条",
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "泡沫塑料算不算巡检统计的垃圾类别？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第1条",
+          "清川SOP 第5条",
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "渔网渔具属于哪一类？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "水草和树叶要不要计入垃圾统计？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第1条",
+          "清川SOP 第5条"
+        ]
+      },
+      {
+        "question": "自然漂浮物需要计入垃圾数量吗？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第1条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "玻璃和金属分别属于什么垃圾类别？",
+        "expected": "第2条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "严重度低中高是如何划分的？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "检出强度怎么计算？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "污染强度小于 2 属于什么严重度？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "强度在 2 到 5 之间是哪个等级？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "加权检出量除以图片数量得到什么指标？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "出现渔网渔具时严重度最低是什么级别？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条",
+          "清川SOP 第5条",
+          "清川SOP 第2条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "发现玻璃或金属时严重度会怎么调整？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条",
+          "清川SOP 第4条",
+          "清川SOP 第2条"
+        ]
+      },
+      {
+        "question": "污染强度大于等于 5 是什么严重度？",
+        "expected": "第3条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "每条巡检结论需要对应哪些证据？",
+        "expected": "第4条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第4条",
+          "清川SOP 第6条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "置信度低于多少的识别项必须人工复核？",
+        "expected": "第4条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第4条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "低置信度识别结果能不能直接写入报告？",
+        "expected": "第4条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第4条",
+          "清川SOP 第6条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "报告里的结论如何做到可追溯到原图？",
+        "expected": "第4条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第4条",
+          "清川SOP 第6条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "塑料类垃圾应该怎样处理？",
+        "expected": "第5条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第5条",
+          "清川SOP 第2条"
+        ]
+      },
+      {
+        "question": "渔网渔具的清理有什么要求？",
+        "expected": "第5条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第5条",
+          "清川SOP 第2条",
+          "清川SOP 第3条",
+          "清川SOP 第6条",
+          "清川SOP 第1条"
+        ]
+      },
+      {
+        "question": "清理渔网时为什么要避免缠绕水生动物？",
+        "expected": "第5条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第5条"
+        ]
+      },
+      {
+        "question": "塑料瓶和塑料袋优先采用什么整改方式？",
+        "expected": "第5条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第5条",
+          "清川SOP 第2条"
+        ]
+      },
+      {
+        "question": "巡检报告需要包含哪些内容？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第4条",
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第1条"
+        ]
+      },
+      {
+        "question": "报告中必须写明巡检时间和地点吗？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第4条",
+          "清川SOP 第1条"
+        ]
+      },
+      {
+        "question": "没有标准依据时可以编造引用吗？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条"
+        ]
+      },
+      {
+        "question": "报告里要包含局限性说明吗？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第4条"
+        ]
+      },
+      {
+        "question": "报告需要给出分类统计和整改建议吗？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第2条",
+          "清川SOP 第5条",
+          "清川SOP 第4条",
+          "清川SOP 第3条"
+        ]
+      },
+      {
+        "question": "无标准依据时报告应该怎么处理引用？",
+        "expected": "第6条",
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第4条",
+          "清川SOP 第3条"
+        ]
+      }
+    ]
+  },
+  "generatedAt": "2026-10-24T06:43:55.104Z",
+  "agent": {
+    "successRate": 0.75,
+    "avgLatencyMs": 41082,
+    "details": [
+      {
+        "name": "normal",
+        "expected": "completed",
+        "actual": "completed",
+        "ok": true,
+        "latencyMs": 46832
+      },
+      {
+        "name": "low-confidence",
+        "expected": "awaiting_review",
+        "actual": "completed",
+        "ok": false,
+        "latencyMs": 58548
+      },
+      {
+        "name": "no-evidence",
+        "expected": "completed",
+        "actual": "completed",
+        "ok": true,
+        "latencyMs": 58946
+      },
+      {
+        "name": "injection",
+        "expected": "failed",
+        "actual": "failed",
+        "ok": true,
+        "latencyMs": 1,
+        "error": "指令包含可疑内容"
+      }
+    ]
+  }
+}
