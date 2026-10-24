@@ -77,13 +77,16 @@
 
 ```json
 [
-  { "name": "normal", "instruction": "检查塑料垃圾", "expectedStatus": "completed" }
+  { "name": "normal", "instruction": "检查塑料垃圾", "expectedStatus": "completed", "image": "sample-2.jpg" }
 ]
 ```
 
-- 数组元素：`name`、`instruction`、`expectedStatus`（期望的 run 最终状态）。
+- 数组元素：`name`、`instruction`、`expectedStatus`（期望的 run 最终状态），
+  以及可选的 `image`（`public/samples/` 下的文件名，缺省为 `sample-1.jpg`）。
 - 四个场景：`normal`（正常完成）、`low-confidence`（低置信度需人工复核）、
   `no-evidence`（知识库无依据仍完成）、`injection`（提示注入被拒绝而失败）。
+- `normal` / `no-evidence` 使用 `sample-2.jpg`（该图在当前模型下没有 <0.5 的检出），
+  `low-confidence` 使用 `sample-1.jpg`（含低置信目标）；`injection` 在读取图片前即被拒绝。
 - 由 `scripts/eval-agent.ts` 针对内存数据库逐场景执行，统计成功率与平均耗时。
 
 ## 运行方式
