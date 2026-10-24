@@ -5,6 +5,7 @@ import { createDb } from '@/lib/db/client'
 import * as repo from '@/lib/db/repo'
 import { finalizeReport } from '@/lib/agent/report-pipeline'
 import { BudgetTracker } from '@/lib/ai/budget'
+import { PROMPT_VERSIONS } from '@/lib/ai/prompts'
 import type { ReportContext, ReporterPort, RetrievalPort, VerifierPort } from '@/lib/agent/types'
 import type { Detection, ReportDraft } from '@/lib/domain/schemas'
 
@@ -152,6 +153,70 @@ describe('finalizeReport', () => {
     })
 
     expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['foam'])
+  })
+
+  it('persists aggregate/retrieve/draft/verify steps and the reporter prompt version', async () => {
+    const { db, run } = setup()
+    let clock = Date.parse('2026-10-22T00:00:00.000Z')
+    const now = () => new Date(clock += 5)
+
+    const result = await finalizeReport({
+      db,
+      repo,
+      run,
+      detections: [detection({ confidence: 0.9, reviewStatus: 'confirmed' })],
+      analyzedImageCount: 1,
+      retrieval: retrieval(),
+      reporter: reporter(),
+      verifier: passingVerifier,
+      now,
+      budget: new BudgetTracker(1),
+    })
+    expect(result.status).toBe('completed')
+
+    const steps = repo.listAgentSteps(db, run.id)
+    const byName = new Map(steps.map(step => [step.step, step]))
+    for (const name of ['aggregate', 'retrieve', 'draft', 'verify']) {
+      const step = byName.get(name)
+      expect(step, `${name} step`).toBeTruthy()
+      expect(step?.status).toBe('done')
+      expect(step?.startedAt).toBeGreaterThanOrEqual(Date.parse('2026-10-22T00:00:00.000Z'))
+      expect(step?.finishedAt).toBeGreaterThanOrEqual(step?.startedAt ?? 0)
+      expect(step?.latencyMs).toBeGreaterThanOrEqual(0)
+    }
+    expect(byName.get('retrieve')?.toolName).toBe('searchStandards')
+    expect(byName.get('draft')?.toolName).toBe('draftReport')
+    expect(byName.get('verify')?.toolName).toBe('verifyReport')
+    expect(byName.get('verify')?.outputJson).toContain('"passed":true')
+    expect(repo.getRun(db, run.id)?.promptVersion).toBe(PROMPT_VERSIONS.reporter)
+  })
+
+  it('persists verification issues with the verify step when verification fails', async () => {
+    const { db, run } = setup()
+    const failing: VerifierPort = {
+      verify: () => ({ passed: false, issues: [{ type: 'unknown_evidence', message: '证据不存在' }] }),
+    }
+
+    const result = await finalizeReport({
+      db,
+      repo,
+      run,
+      detections: [detection({ confidence: 0.9, reviewStatus: 'confirmed' })],
+      analyzedImageCount: 1,
+      retrieval: retrieval(),
+      reporter: reporter(),
+      verifier: failing,
+      now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
+    })
+
+    expect(result.status).toBe('awaiting_review')
+    const verifyStep = repo.listAgentSteps(db, run.id).find(step => step.step === 'verify')
+    expect(verifyStep?.status).toBe('error')
+    expect(verifyStep?.outputJson).toContain('证据不存在')
+    expect(verifyStep?.error).toContain('证据不存在')
+    // One repair attempt is a real, recorded step - not fabricated.
+    expect(repo.listAgentSteps(db, run.id).some(step => step.step === 'repair')).toBe(true)
   })
 
   it('repairs once after a failed verification and trusts the repaired result', async () => {
