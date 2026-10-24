@@ -17,7 +17,7 @@ export const VISION_PROMPT = `你是河湖垃圾巡检视觉助手。请识别�
 
 export const REPORTER_PROMPT = `你是巡检报告撰写助手。根据给定的检测记录、指标和标准条款生成报告 JSON。
 要求：
-- 每条 claim 必须带 evidenceIds，只能引用给定的证据 ID，不得编造。
+- 每条 claim 必须带 evidenceIds（至少 1 个），只能引用给定的证据 ID，不得编造；没有对应证据时引用 metric:overall。
 - 指标数字必须与给定 metrics 完全一致，不得修改或计算新数字。
 - 引用只允许使用给定 clauses 中的 standardNo 与 clauseNo。
 - 没有依据时，在 limitations 中写明"知识库中未找到依据"。

@@ -3,7 +3,10 @@ import type { ReportContext } from '@/lib/agent/types'
 
 const mocks = vi.hoisted(() => ({ generateJson: vi.fn() }))
 
-vi.mock('@/lib/ai/generate-json', () => ({ generateJson: mocks.generateJson }))
+vi.mock('@/lib/ai/generate-json', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/ai/generate-json')>()
+  return { ...actual, generateJson: mocks.generateJson }
+})
 vi.mock('@/lib/ai/providers', () => ({
   getTextModel: () => ({}),
   getTextModelId: () => 'deepseek-chat',
@@ -12,6 +15,7 @@ vi.mock('@/lib/ai/providers', () => ({
 
 import { DeepSeekReportGenerator } from '@/lib/agent/report-generator'
 import { BudgetTracker, BudgetExceededError } from '@/lib/ai/budget'
+import { JsonSchemaError } from '@/lib/ai/generate-json'
 
 const context: ReportContext = {
   runId: 'r1',
@@ -58,6 +62,32 @@ describe('DeepSeekReportGenerator budget', () => {
     expect(budget.spent).toBeCloseTo(2)
 
     await generator.repair(context, [])
+    expect(budget.spent).toBeCloseTo(4)
+  })
+
+  it('retries once after a structured-output failure and charges both attempts', async () => {
+    mocks.generateJson.mockRejectedValueOnce(
+      new JsonSchemaError('bad', { inputTokens: 1_000_000, outputTokens: 0 }),
+    )
+    const budget = new BudgetTracker(10)
+    const generator = new DeepSeekReportGenerator({ budget })
+
+    const report = await generator.draft(context)
+    expect(report.title).toBe('报告')
+    expect(mocks.generateJson).toHaveBeenCalledTimes(2)
+    // Failed attempt (¥2) + successful attempt (¥2).
+    expect(budget.spent).toBeCloseTo(4)
+  })
+
+  it('does not retry a third time when the structured-output retry also fails', async () => {
+    mocks.generateJson.mockRejectedValue(
+      new JsonSchemaError('bad', { inputTokens: 1_000_000, outputTokens: 0 }),
+    )
+    const budget = new BudgetTracker(10)
+    const generator = new DeepSeekReportGenerator({ budget })
+
+    await expect(generator.draft(context)).rejects.toThrow(JsonSchemaError)
+    expect(mocks.generateJson).toHaveBeenCalledTimes(2)
     expect(budget.spent).toBeCloseTo(4)
   })
 

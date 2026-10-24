@@ -1,7 +1,7 @@
 import { ReportDraft } from '@/lib/domain/schemas'
 import type { VerifyIssue } from '@/lib/domain/evidence'
 import type { ReportContext, ReporterPort } from './types'
-import { generateJson } from '@/lib/ai/generate-json'
+import { generateJson, JsonParseError, JsonSchemaError } from '@/lib/ai/generate-json'
 import { getTextModel, getTextModelId, getVisionModelId } from '@/lib/ai/providers'
 import { BudgetExceededError, BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { REPORTER_PROMPT, PROMPT_VERSIONS } from '@/lib/ai/prompts'
@@ -33,7 +33,7 @@ export function parseReportWithMetrics(raw: unknown, context: ReportContext): Re
 
 // Exported for tests: the prompt must carry image-derived descriptions as
 // clearly-labelled untrusted data, never as instructions.
-export function buildReporterPrompt(context: ReportContext, issues?: VerifyIssue[]) {
+export function buildReporterPrompt(context: ReportContext, issues?: VerifyIssue[], retryNote?: string) {
   return JSON.stringify({
     instruction: context.instruction,
     location: context.location,
@@ -69,7 +69,19 @@ export function buildReporterPrompt(context: ReportContext, issues?: VerifyIssue
       standardNo: c.standardNo, clauseNo: c.clauseNo, title: c.title, content: c.content,
     })),
     issues: issues ?? [],
+    retryNote: retryNote ?? null,
   })
+}
+
+const REPORTER_RETRY_NOTE =
+  '上一次输出未通过 JSON 结构校验。请只输出符合给定 schema 的 JSON：' +
+  'claims[].section 只能是 summary|findings|severity|recommendations|limitations；' +
+  '每条 claim（包括 limitations）的 evidenceIds 至少包含 1 个给定证据 ID，' +
+  '没有对应证据时引用 metric:overall；' +
+  'citations 每项必须同时含 standardNo 和 clauseNo；limitations 必须是字符串数组。'
+
+function isStructuredOutputError(error: unknown): error is JsonParseError | JsonSchemaError {
+  return error instanceof JsonParseError || error instanceof JsonSchemaError
 }
 
 const ReportModelOutput = ReportDraft.omit({ metrics: true, modelInfo: true })
@@ -89,27 +101,44 @@ export class DeepSeekReportGenerator implements ReporterPort {
     if (this.opts.budget && this.opts.budget.remaining <= 0) throw new BudgetExceededError()
   }
 
-  async draft(context: ReportContext): Promise<ReportDraft> {
+  // One paid call. Failed parse/schema attempts still cost tokens, so their
+  // usage is charged before the error is rethrown.
+  private async callModel(context: ReportContext, issues?: VerifyIssue[], retryNote?: string): Promise<unknown> {
     this.ensureBudget()
-    const result = await generateJson({
-      model: getTextModel(),
-      schema: ReportModelOutput,
-      system: REPORTER_PROMPT,
-      prompt: buildReporterPrompt(context),
-    })
-    this.charge(result.usage)
-    return parseReportWithMetrics(result.value, context)
+    try {
+      const result = await generateJson({
+        model: getTextModel(),
+        schema: ReportModelOutput,
+        system: REPORTER_PROMPT,
+        prompt: buildReporterPrompt(context, issues, retryNote),
+      })
+      this.charge(result.usage)
+      return result.value
+    } catch (error) {
+      if (isStructuredOutputError(error) && error.usage) this.charge(error.usage)
+      throw error
+    }
+  }
+
+  async draft(context: ReportContext): Promise<ReportDraft> {
+    let value: unknown
+    try {
+      value = await this.callModel(context)
+    } catch (error) {
+      if (!isStructuredOutputError(error)) throw error
+      value = await this.callModel(context, undefined, REPORTER_RETRY_NOTE)
+    }
+    return parseReportWithMetrics(value, context)
   }
 
   async repair(context: ReportContext, issues: VerifyIssue[]): Promise<ReportDraft> {
-    this.ensureBudget()
-    const result = await generateJson({
-      model: getTextModel(),
-      schema: ReportModelOutput,
-      system: REPORTER_PROMPT,
-      prompt: buildReporterPrompt(context, issues),
-    })
-    this.charge(result.usage)
-    return parseReportWithMetrics(result.value, context)
+    let value: unknown
+    try {
+      value = await this.callModel(context, issues)
+    } catch (error) {
+      if (!isStructuredOutputError(error)) throw error
+      value = await this.callModel(context, issues, REPORTER_RETRY_NOTE)
+    }
+    return parseReportWithMetrics(value, context)
   }
 }

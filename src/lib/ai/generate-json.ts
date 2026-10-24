@@ -1,15 +1,17 @@
 import { generateText, type LanguageModel } from 'ai'
 import type { z } from 'zod'
 
+export type TokenUsage = { inputTokens: number; outputTokens: number }
+
 export class JsonParseError extends Error {
-  constructor(public readonly raw: string) {
+  constructor(public readonly raw: string, public readonly usage?: TokenUsage) {
     super('模型输出不是合法 JSON')
     this.name = 'JsonParseError'
   }
 }
 
 export class JsonSchemaError extends Error {
-  constructor(public readonly raw: string) {
+  constructor(public readonly raw: string, public readonly usage?: TokenUsage) {
     super('模型输出 JSON 与预期结构不匹配')
     this.name = 'JsonSchemaError'
   }
@@ -73,14 +75,24 @@ export async function generateJson<T>(opts: {
     prompt: opts.prompt,
     temperature: opts.temperature ?? 0.1,
   })
-  const parsed = opts.schema.safeParse(extractJson(result.text))
-  if (!parsed.success) throw new JsonSchemaError(result.text)
+  // Failed parse/schema attempts still consumed tokens; carry usage on the
+  // error so the reporter can charge them before retrying.
+  const usage: TokenUsage = {
+    inputTokens: result.usage.inputTokens ?? 0,
+    outputTokens: result.usage.outputTokens ?? 0,
+  }
+  let extracted: unknown
+  try {
+    extracted = extractJson(result.text)
+  } catch (error) {
+    if (error instanceof JsonParseError) throw new JsonParseError(error.raw, usage)
+    throw error
+  }
+  const parsed = opts.schema.safeParse(extracted)
+  if (!parsed.success) throw new JsonSchemaError(result.text, usage)
   return {
     value: parsed.data,
-    usage: {
-      inputTokens: result.usage.inputTokens ?? 0,
-      outputTokens: result.usage.outputTokens ?? 0,
-    },
+    usage,
     raw: result.text,
   }
 }
