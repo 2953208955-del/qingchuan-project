@@ -355,7 +355,7 @@
       }
     ]
   },
-  "generatedAt": "2026-10-24T08:10:17.437Z",
+  "generatedAt": "2026-10-24T13:06:11.676Z",
   "agent": {
     "successRate": 1,
     "avgLatencyMs": 21871,
@@ -410,5 +410,15 @@
         "error": "指令包含可疑内容"
       }
     ]
+  },
+  "detection": {
+    "precision": 0.777778,
+    "recall": 0.5,
+    "f1": 0.608696,
+    "tp": 7,
+    "fp": 2,
+    "fn": 7,
+    "images": 10,
+    "mode": "live"
   }
 }

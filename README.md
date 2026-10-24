@@ -138,7 +138,7 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 
 - **RAG**：Recall@5 = **1.00**（35 题全部命中期望条款）。
 - **Agent**：成功率 **4/4（100%）**，平均耗时约 21.9 秒（单次真实运行，2026-10-24）。场景使用不同样例图：`normal` / `no-evidence` 用 `sample-2.jpg`（无低置信目标），`low-confidence` 用 `sample-1.jpg`（含 <0.5 目标），`injection` 在读取图片前即被拒绝。模型输出具有随机性，换一次运行的具体结果可能不同；复核 → 重新生成 → 导出的闭环另有单元测试与 E2E 覆盖。
-- **检测**：尚未运行（`tests/eval/detection-fixtures.json` 仍为空），因此本 README 不宣称任何检测指标。
+- **检测**：10 张 NOAA 公有领域单目标裁片，人工标注 GT，真实 VLM 运行：Precision **0.78**、Recall **0.50**、F1 **0.61**（IoU ≥ 0.5，类别感知）。这是小样本自查，不是大规模基准；GT 为人工粗框，结果不宜与公开数据集的 mAP/F1 直接比较。
 
 评测夹具与诚实性规则详见 [tests/eval/README.md](tests/eval/README.md)。
 
