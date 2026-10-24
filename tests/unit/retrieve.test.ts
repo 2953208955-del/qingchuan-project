@@ -39,6 +39,34 @@ function dbWithCategoryOutliers() {
   return db
 }
 
+function dbWithUntaggedGeneral() {
+  const db = createDb(':memory:')
+  migrate(db, { migrationsFolder: path.resolve('drizzle') })
+  // More than the 20-candidate pool of category-tagged noise, all ranking
+  // higher than the untagged clause.
+  const noise = Array.from({ length: 22 }, (_, i) => ({
+    id: `noise-${i}`,
+    documentId: 'd',
+    standardNo: 'SOP',
+    clauseNo: `第${i + 10}条`,
+    title: '噪声',
+    content: `无关内容${i}`,
+    categoryTags: '["metal"]',
+    embeddingJson: '[1,0,0]',
+  }))
+  db.insert(clauses).values([
+    ...noise,
+    {
+      id: 'general', documentId: 'd', standardNo: 'SOP', clauseNo: '第1条',
+      title: '总则', content: '塑料瓶等漂浮垃圾的通用巡检与处置要求',
+      // Ranks below all 22 category-tagged noise rows: proves the filter runs
+      // before the 20-candidate truncation.
+      categoryTags: '[]', embeddingJson: '[0.5,0.5,0]',
+    },
+  ]).run()
+  return db
+}
+
 const fakeEmbedder = { embed: async () => [[1, 0, 0]] }
 
 describe('retrieval', () => {
@@ -121,5 +149,12 @@ describe('retrieval', () => {
     const result = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', ['plastic_bottle'], 5, 0.1)
     expect(result.noEvidence).toBe(false)
     expect(result.clauses.map(c => c.id)).toEqual(['in-category'])
+  })
+
+  it('keeps untagged general clauses eligible for a category-scoped query', async () => {
+    const db = dbWithUntaggedGeneral()
+    const result = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', ['plastic_bottle'], 5, 0.1)
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(c => c.id)).toContain('general')
   })
 })

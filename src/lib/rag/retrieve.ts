@@ -81,9 +81,15 @@ export async function retrieveClauses(
 ): Promise<{ clauses: Clause[]; noEvidence: boolean }> {
   const [embedding] = await deps.embedder.embed([expandQuery(query)])
   // Filter by category before truncating the pre-rerank pool: an eligible
-  // clause must not be dropped just because many irrelevant categories rank higher.
+  // clause must not be dropped just because many irrelevant categories rank
+  // higher. Untagged clauses are general requirements that apply to every
+  // category, so they stay eligible for category-scoped queries.
   let hits = searchChunks(deps.db, embedding, query, Number.MAX_SAFE_INTEGER)
-    .filter(h => categories.length === 0 || h.categoryTags.some(t => categories.includes(t as DebrisCategory)))
+    .filter(h =>
+      categories.length === 0 ||
+      h.categoryTags.length === 0 ||
+      h.categoryTags.some(t => categories.includes(t as DebrisCategory)),
+    )
     .slice(0, 20)
 
   if (deps.reranker && hits.length > 0) {
