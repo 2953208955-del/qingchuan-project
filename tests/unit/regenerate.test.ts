@@ -100,6 +100,7 @@ function deps(budget = new BudgetTracker(1, 0.1)): RegenerateDeps {
     },
     verifier: { verify: () => ({ passed: true, issues: [] }) },
     budget,
+    dailyBudgetCny: 20,
     now,
   }
 }
@@ -261,6 +262,35 @@ describe('regenerateReport', () => {
 
     expect(outcome).toMatchObject({ ok: false, status: 409, code: 'BUDGET_EXCEEDED' })
     // No retrieval, no draft/repair, no rate-limit hit, no claim.
+    expect(vi.mocked(d.retrieval.retrieve)).not.toHaveBeenCalled()
+    expect(vi.mocked(d.reporter.draft)).not.toHaveBeenCalled()
+    expect(vi.mocked(d.reporter.repair)).not.toHaveBeenCalled()
+    expect(gateCalls).toBe(0)
+    expect(repo.getRun(db, runId)?.status).toBe('awaiting_review')
+    expect(repo.getLatestReport(db, runId)?.version).toBe(1)
+  })
+
+  it('rejects before any paid call when today\'s persisted spend reaches the daily budget', async () => {
+    const { db, runId } = setup({ reviewStatus: 'confirmed' })
+    repo.updateRun(db, runId, { totalCostCny: 1 })
+    // Per-run budget is not the blocker here (spent 1, cap 10).
+    const d = deps(new BudgetTracker(10, 1))
+    let gateCalls = 0
+
+    const outcome = await regenerateReport(db, runId, {
+      ...d,
+      dailyBudgetCny: 1,
+      // The gate reads the real local day; the fixture timestamps are "now".
+      now: () => new Date(),
+      gate: () => {
+        gateCalls++
+        return null
+      },
+    })
+
+    expect(outcome).toMatchObject({ ok: false, status: 409, code: 'DAILY_BUDGET_EXCEEDED' })
+    expect(outcome.ok).toBe(false)
+    if (!outcome.ok) expect(outcome.message).toContain('今日 API 预算')
     expect(vi.mocked(d.retrieval.retrieve)).not.toHaveBeenCalled()
     expect(vi.mocked(d.reporter.draft)).not.toHaveBeenCalled()
     expect(vi.mocked(d.reporter.repair)).not.toHaveBeenCalled()

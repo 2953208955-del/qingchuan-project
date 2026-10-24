@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm'
 import type { Db } from './client'
-import { agentSteps, detections, images, reports, runs } from './schema'
+import { agentSteps, clauses, detections, images, reports, runs } from './schema'
 
 export type RunRow = typeof runs.$inferSelect
 
@@ -27,6 +27,21 @@ export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'statu
   db.update(runs).set({ ...patch, updatedAt: Date.now() }).where(eq(runs.id, id)).run()
 }
 
+// Daily spend for the budget gate. `totalCostCny` is NOT NULL in the schema,
+// but rows written by an older/partial schema may still be NULL; coalesce both
+// the per-row value and the empty-set SUM so the gate never sees NaN/null.
+// The caller supplies local-midnight [start, end) boundaries.
+export function sumRunCostCnyBetween(db: Db, startMs: number, endMs: number): number {
+  const row = db.select({
+    total: sql<number>`coalesce(sum(coalesce(${runs.totalCostCny}, 0)), 0)`,
+  })
+    .from(runs)
+    .where(and(gte(runs.createdAt, startMs), lt(runs.createdAt, endMs)))
+    .get()
+  const total = row?.total
+  return typeof total === 'number' && Number.isFinite(total) ? total : 0
+}
+
 // Atomically move a reviewable run into the in-flight state. Only one caller
 // can win the UPDATE; the rest see 0 changes and must answer RUN_BUSY. The
 // route checks report staleness first, then this claim closes the check-then-act
@@ -37,6 +52,20 @@ export function claimRunForRegeneration(db: Db, id: string): number {
     .where(and(
       eq(runs.id, id),
       inArray(runs.status, ['awaiting_review', 'completed', 'stale', 'failed']),
+    ))
+    .run()
+    .changes
+}
+
+// Same check-then-act guard for the initial analysis. Without it two concurrent
+// POST /analyze requests could both pass the route's status check and start
+// paid vision work; the loser must see 0 changes and answer 409.
+export function claimRunForAnalysis(db: Db, id: string): number {
+  return db.update(runs)
+    .set({ status: 'analyzing', updatedAt: Date.now() })
+    .where(and(
+      eq(runs.id, id),
+      inArray(runs.status, ['idle', 'planned']),
     ))
     .run()
     .changes
@@ -90,6 +119,31 @@ export function addAgentStep(db: Db, input: typeof agentSteps.$inferInsert) {
 
 export function updateAgentStep(db: Db, id: string, patch: Partial<typeof agentSteps.$inferInsert>) {
   db.update(agentSteps).set(patch).where(eq(agentSteps.id, id)).run()
+}
+
+export function listAgentSteps(db: Db, runId: string) {
+  return db.select().from(agentSteps).where(eq(agentSteps.runId, runId)).orderBy(agentSteps.startedAt).all()
+}
+
+// Cited-clause panel on the report page: reports reference clauses by
+// `clause:<id>` evidence ids; older reports may only list
+// {standardNo, clauseNo} citations, so the loader can fall back to those.
+export function listClausesByIds(db: Db, ids: string[]) {
+  if (ids.length === 0) return []
+  return db.select().from(clauses).where(inArray(clauses.id, ids)).all()
+}
+
+export function listClausesByCitations(db: Db, citations: { standardNo: string; clauseNo: string }[]) {
+  const pairs = citations.flatMap(citation => {
+    const standardNo = typeof citation?.standardNo === 'string' ? citation.standardNo : ''
+    const clauseNo = typeof citation?.clauseNo === 'string' ? citation.clauseNo : ''
+    return standardNo && clauseNo
+      ? [and(eq(clauses.standardNo, standardNo), eq(clauses.clauseNo, clauseNo))]
+      : []
+  })
+  if (pairs.length === 0) return []
+  const condition = pairs.length === 1 ? pairs[0] : or(...pairs)
+  return db.select().from(clauses).where(condition).all()
 }
 
 export function saveReport(db: Db, input: { id: string; runId: string; version: number; contentJson: string; status: string }) {

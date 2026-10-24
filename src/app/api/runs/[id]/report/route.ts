@@ -4,11 +4,11 @@ import * as repo from '@/lib/db/repo'
 import { regenerateReport } from '@/lib/agent/regenerate'
 import { RagRetrievalAdapter } from '@/lib/agent/retrieval-adapter'
 import { DeepSeekReportGenerator } from '@/lib/agent/report-generator'
-import { BudgetTracker } from '@/lib/ai/budget'
+import { BudgetTracker, dailyBudgetFromEnv, runBudgetFromEnv } from '@/lib/ai/budget'
 import { verifyReport } from '@/lib/domain/evidence'
 import { DashScopeEmbedder } from '@/lib/rag/embed'
 import { DashScopeReranker } from '@/lib/rag/rerank'
-import { RateLimiter, clientKey } from '@/lib/http/rate-limit'
+import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -16,7 +16,7 @@ export const maxDuration = 300
 // Regeneration is paid (embedding + rerank + DeepSeek drafts); cap the loop the
 // same way the analyze route caps analysis. The core only spends a hit after
 // all cheap eligibility/pending guards pass, just before the claim.
-const regenerateLimiter = new RateLimiter(3, 60_000)
+const regenerateLimiter = new RateLimiter(RATE_LIMITS.regenerate.limit, RATE_LIMITS.regenerate.windowMs)
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const run = repo.getRun(db, id)
   // Seeding the tracker with the run's stored spend keeps regeneration inside
   // the same per-run RUN_BUDGET_CNY cap as analysis.
-  const budget = new BudgetTracker(Number(process.env.RUN_BUDGET_CNY ?? 1), run?.totalCostCny ?? 0)
+  const budget = new BudgetTracker(runBudgetFromEnv(), run?.totalCostCny ?? 0)
   const apiKey = process.env.DASHSCOPE_API_KEY ?? ''
   const key = clientKey(request)
 
@@ -46,6 +46,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     reporter: new DeepSeekReportGenerator({ budget }),
     verifier: { verify: verifyReport },
     budget,
+    dailyBudgetCny: dailyBudgetFromEnv(),
     gate: () => regenerateLimiter.check(key)
       ? null
       : { status: 429, code: 'RATE_LIMITED', message: '重新生成请求过于频繁，请稍后再试' },

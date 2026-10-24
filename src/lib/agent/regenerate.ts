@@ -1,4 +1,9 @@
-import { BudgetExceededError, type BudgetTracker } from '@/lib/ai/budget'
+import {
+  BudgetExceededError,
+  dailyBudgetError,
+  localDayBounds,
+  type BudgetTracker,
+} from '@/lib/ai/budget'
 import type { Db } from '@/lib/db/client'
 import * as repo from '@/lib/db/repo'
 import { pendingLowConfidenceCount } from '@/lib/domain/review'
@@ -17,6 +22,7 @@ export type RegenerateErrorCode =
   | 'REVIEW_PENDING'
   | 'RATE_LIMITED'
   | 'BUDGET_EXCEEDED'
+  | 'DAILY_BUDGET_EXCEEDED'
   | 'REPORT_FAILED'
 
 export interface RegenerateGateError {
@@ -47,6 +53,9 @@ export interface RegenerateDeps {
   // Seeded with the run's stored spend so regeneration counts against the
   // same RUN_BUDGET_CNY cap as analysis.
   budget: BudgetTracker
+  // Daily API budget for today's persisted run spend (route: DAILY_BUDGET_CNY).
+  // The core queries the DB itself so the gate is exercised end-to-end in tests.
+  dailyBudgetCny: number
   now?: () => Date
   // Invoked after all cheap DB guards and immediately before the claim/draft
   // (route: rate limiting). Guard-rejected requests must not consume a hit.
@@ -99,6 +108,14 @@ export async function regenerateReport(
   if (deps.budget.remaining <= 0) {
     return fail(409, 'BUDGET_EXCEEDED', '本次运行预算已用完，无法重新生成报告')
   }
+
+  // Daily cap across every persisted run today. Like the per-run guard, this
+  // runs before the rate-limit hit, the claim and any paid embedding/reporter
+  // call, so an exhausted day cannot start new spend.
+  const today = localDayBounds(deps.now?.() ?? new Date())
+  const dailySpent = repo.sumRunCostCnyBetween(db, today.start, today.end)
+  const dailyError = dailyBudgetError(dailySpent, deps.dailyBudgetCny)
+  if (dailyError) return fail(409, 'DAILY_BUDGET_EXCEEDED', dailyError)
 
   // Cheap guards passed; only now may the route spend a rate-limit hit.
   const gateError = deps.gate?.()

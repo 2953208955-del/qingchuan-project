@@ -118,7 +118,7 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
     mimeType: 'image/png',
     buffer: Buffer.from(PNG_BASE64, 'base64'),
   })
-  await expect(page.getByText('已选 1 张')).toBeVisible()
+  await expect(page.getByText('已选 1/20 张')).toBeVisible()
 
   await page.getByRole('button', { name: '生成计划' }).click()
   await expect(page.getByRole('dialog', { name: '执行计划确认' })).toBeVisible()

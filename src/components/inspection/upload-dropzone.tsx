@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import imageCompression from 'browser-image-compression'
 import { useInspectionStore } from '@/stores/inspection-store'
+import { MAX_IMAGES_PER_RUN } from '@/lib/domain/limits'
 import type { UploadedImage } from '@/lib/domain/schemas'
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024
@@ -44,7 +45,16 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
     // Guard against a picker opened before the parent disabled uploading.
     if (!files?.length || disabled) return
     // Snapshot before awaiting: the input may be reset while uploads run.
-    const list = Array.from(files)
+    const all = Array.from(files)
+    const already = useInspectionStore.getState().images.length
+    const remaining = MAX_IMAGES_PER_RUN - already
+    if (remaining <= 0) {
+      setError(`单次巡检最多 ${MAX_IMAGES_PER_RUN} 张图片，请先开始本次巡检或移除已选图片`)
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+    const list = all.slice(0, remaining)
+    const skipped = all.length - list.length
     setBusy(true)
     onBusyChange?.(true)
     setError(null)
@@ -52,6 +62,9 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
 
     const uploaded: UploadedImage[] = []
     const failures: string[] = []
+    if (skipped > 0) {
+      failures.push(`另有 ${skipped} 张未上传：单次巡检最多 ${MAX_IMAGES_PER_RUN} 张图片`)
+    }
     try {
       for (const [index, file] of list.entries()) {
         // Validate before compression so oversized/wrong-type files never reach the
@@ -111,7 +124,7 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
       <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
         {busy
           ? `正在上传 ${progress?.done ?? 0}/${progress?.total ?? 0}…`
-          : `已选 ${images.length} 张，单张不超过 15MB，支持 JPEG、PNG、WebP`}
+          : `已选 ${images.length}/${MAX_IMAGES_PER_RUN} 张，单张不超过 15MB，支持 JPEG、PNG、WebP`}
       </p>
       {error && (
         <p role="alert" className="mt-2 text-sm text-destructive">

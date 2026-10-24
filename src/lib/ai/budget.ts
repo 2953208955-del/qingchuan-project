@@ -3,6 +3,43 @@ export interface ModelPrice {
   outputCnyPerMillion: number
 }
 
+export const DEFAULT_RUN_BUDGET_CNY = 1
+export const DEFAULT_DAILY_BUDGET_CNY = 20
+
+// Budget env vars are operator-supplied strings. Empty, NaN, Infinity and
+// non-positive values must fall back to the documented defaults instead of
+// disabling the cap or poisoning arithmetic with NaN.
+export function parseBudgetCny(raw: string | number | undefined | null, fallback: number): number {
+  if (raw === undefined || raw === null) return fallback
+  if (typeof raw === 'string' && raw.trim() === '') return fallback
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : fallback
+}
+
+export function runBudgetFromEnv(source: Partial<NodeJS.ProcessEnv> = process.env): number {
+  return parseBudgetCny(source.RUN_BUDGET_CNY, DEFAULT_RUN_BUDGET_CNY)
+}
+
+export function dailyBudgetFromEnv(source: Partial<NodeJS.ProcessEnv> = process.env): number {
+  return parseBudgetCny(source.DAILY_BUDGET_CNY, DEFAULT_DAILY_BUDGET_CNY)
+}
+
+// Local-day window [start, end) used by the daily-spend query. Using local
+// midnight (not a rolling 24h window) matches the operator's reading of "today".
+export function localDayBounds(now: Date): { start: number; end: number } {
+  return {
+    start: new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(),
+    end: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime(),
+  }
+}
+
+export function dailyBudgetError(spentCny: number, limitCny: number): string | null {
+  if (!Number.isFinite(spentCny) || !Number.isFinite(limitCny)) return null
+  return spentCny >= limitCny
+    ? `今日 API 预算（¥${limitCny}）已用完，无法开始新的付费操作`
+    : null
+}
+
 // 2026-10 官网价估算（元 / 百万 token）；价格变化时只改这里。
 export const MODEL_PRICES: Record<string, ModelPrice> = {
   'deepseek-chat': { inputCnyPerMillion: 2, outputCnyPerMillion: 8 },

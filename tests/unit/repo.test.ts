@@ -3,8 +3,22 @@ import path from 'node:path'
 import { eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { createDb } from '@/lib/db/client'
-import { reports } from '@/lib/db/schema'
-import { createRun, getRun, addImage, listImages, updateImage, saveReport, markReportStale, getLatestReport } from '@/lib/db/repo'
+import { reports, runs } from '@/lib/db/schema'
+import {
+  createRun,
+  getRun,
+  addImage,
+  listImages,
+  updateImage,
+  saveReport,
+  markReportStale,
+  getLatestReport,
+  claimRunForAnalysis,
+  claimRunForRegeneration,
+  sumRunCostCnyBetween,
+  updateRun,
+} from '@/lib/db/repo'
+import { localDayBounds } from '@/lib/ai/budget'
 
 function freshDb() {
   const db = createDb(':memory:')
@@ -38,6 +52,47 @@ describe('repository', () => {
     expect(image).toMatchObject({
       width: 800, height: 600, exifJson: '{"make":"Nikon"}', status: 'analyzed',
     })
+  })
+
+  it('claims an idle/planned run for analysis exactly once', () => {
+    const db = freshDb()
+    const run = createRun(db, { instruction: 'x', location: null })
+
+    expect(claimRunForAnalysis(db, run.id)).toBe(1)
+    expect(getRun(db, run.id)?.status).toBe('analyzing')
+    // The second concurrent request loses the conditional UPDATE.
+    expect(claimRunForAnalysis(db, run.id)).toBe(0)
+
+    // Regeneration has its own claim; a run already in flight cannot start.
+    expect(claimRunForRegeneration(db, run.id)).toBe(0)
+  })
+
+  it('does not claim a run that is no longer startable', () => {
+    const db = freshDb()
+    const run = createRun(db, { instruction: 'x', location: null })
+    updateRun(db, run.id, { status: 'completed' })
+    expect(claimRunForAnalysis(db, run.id)).toBe(0)
+  })
+
+  it('sums only the local day and treats missing/zero cost as zero', () => {
+    const db = freshDb()
+    const now = new Date(2026, 9, 24, 12, 0, 0)
+    const { start, end } = localDayBounds(now)
+
+    const today = createRun(db, { instruction: 'today', location: null })
+    updateRun(db, today.id, { totalCostCny: 0.4 })
+    db.update(runs).set({ createdAt: now.getTime() - 60_000 }).where(eq(runs.id, today.id)).run()
+
+    const zero = createRun(db, { instruction: 'zero', location: null })
+    db.update(runs).set({ createdAt: now.getTime() - 30_000 }).where(eq(runs.id, zero.id)).run()
+
+    const yesterday = createRun(db, { instruction: 'yesterday', location: null })
+    updateRun(db, yesterday.id, { totalCostCny: 9.9 })
+    db.update(runs).set({ createdAt: now.getTime() - 24 * 60 * 60 * 1000 }).where(eq(runs.id, yesterday.id)).run()
+
+    expect(sumRunCostCnyBetween(db, start, end)).toBeCloseTo(0.4)
+    // Empty windows are 0, never null/NaN.
+    expect(sumRunCostCnyBetween(db, 0, 1)).toBe(0)
   })
 
   it('marks all reports for a run stale', () => {

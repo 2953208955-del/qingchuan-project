@@ -6,17 +6,23 @@ import { RagRetrievalAdapter } from '@/lib/agent/retrieval-adapter'
 import { QwenVisionAnalyzer } from '@/lib/vision/qwen'
 import { DashScopeEmbedder } from '@/lib/rag/embed'
 import { DashScopeReranker } from '@/lib/rag/rerank'
-import { BudgetTracker } from '@/lib/ai/budget'
+import {
+  BudgetTracker,
+  dailyBudgetError,
+  dailyBudgetFromEnv,
+  localDayBounds,
+  runBudgetFromEnv,
+} from '@/lib/ai/budget'
 import { verifyReport } from '@/lib/domain/evidence'
 import { encodeSse } from '@/lib/agent/sse'
 import type { AgentEvent } from '@/lib/agent/types'
-import { RateLimiter, clientKey } from '@/lib/http/rate-limit'
+import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
 import * as repo from '@/lib/db/repo'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const analyzeLimiter = new RateLimiter(3, 60_000)
+const analyzeLimiter = new RateLimiter(RATE_LIMITS.analyze.limit, RATE_LIMITS.analyze.windowMs)
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!analyzeLimiter.check(clientKey(request))) {
@@ -36,9 +42,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     )
   }
 
+  // Daily cap is checked before claiming the run: a rejected start must not
+  // leave the run stuck in `analyzing`, and no paid call may follow.
+  const today = localDayBounds(new Date())
+  const dailySpent = repo.sumRunCostCnyBetween(db, today.start, today.end)
+  const dailyError = dailyBudgetError(dailySpent, dailyBudgetFromEnv())
+  if (dailyError) {
+    return NextResponse.json({ code: 'DAILY_BUDGET_EXCEEDED', message: dailyError, retryable: false }, { status: 409 })
+  }
+
+  // Check-then-act gate: only one concurrent request may start paid analysis.
+  if (repo.claimRunForAnalysis(db, id) === 0) {
+    return NextResponse.json(
+      { code: 'RUN_BUSY', message: '任务已开始分析，请勿重复提交', retryable: true },
+      { status: 409 },
+    )
+  }
+
   // One tracker for the whole run: vision calls and report drafting both add
   // to it, and the orchestrator persists its final spend.
-  const budget = new BudgetTracker(Number(process.env.RUN_BUDGET_CNY ?? 1))
+  const budget = new BudgetTracker(runBudgetFromEnv())
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({

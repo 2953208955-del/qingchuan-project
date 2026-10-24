@@ -4,12 +4,13 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db/client'
 import { addImage, createRun } from '@/lib/db/repo'
 import { scanForInjection } from '@/lib/safety/injection'
+import { MAX_IMAGES_PER_RUN } from '@/lib/domain/limits'
 import { DebrisCategory } from '@/lib/domain/schemas'
-import { RateLimiter, clientKey } from '@/lib/http/rate-limit'
+import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
 
 export const runtime = 'nodejs'
 
-const runsLimiter = new RateLimiter(10, 60_000)
+const runsLimiter = new RateLimiter(RATE_LIMITS.runs.limit, RATE_LIMITS.runs.windowMs)
 const CATEGORY_VALUES = new Set<string>(DebrisCategory.options)
 
 type ImageInput = { filename: string; path: string; sha256: string }
@@ -33,6 +34,13 @@ export async function POST(request: Request) {
   }
   if (!body.images?.length) {
     return NextResponse.json({ code: 'NO_IMAGES', message: '至少上传一张图片', retryable: false }, { status: 400 })
+  }
+  // A per-run cap bounds both the paid VLM fan-out and cleanup cost.
+  if (body.images.length > MAX_IMAGES_PER_RUN) {
+    return NextResponse.json(
+      { code: 'TOO_MANY_IMAGES', message: `单次巡检最多 ${MAX_IMAGES_PER_RUN} 张图片`, retryable: false },
+      { status: 400 },
+    )
   }
   // focusCategories is user input: reject unknown categories instead of letting
   // a typo silently change what the VLM is asked to look for.
