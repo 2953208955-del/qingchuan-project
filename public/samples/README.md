@@ -21,8 +21,11 @@
 | 文件名 | 拍摄者/作者 | 来源链接或"自摄" | 许可证 | 拍摄日期 | 授权/同意情况 |
 | --- | --- | --- | --- | --- | --- |
 | `sample-1.jpg` | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
-| `sample-2.jpg` | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| `sample-2.jpg` | LCDR Eric Johnson（NOAA Corps） | https://www.noaa.gov/noaa-collections/photo-library/fish1969jpg | Public Domain（美国联邦政府作品，NOAA Photo Library） | 2008-08-01 | NOAA 要求注明来源；画面无人像 |
 | `sample-3.jpg` | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+
+`sample-1.jpg` 与 `sample-3.jpg` 的来源/许可证仍待拍摄者确认；确认并填写上表之前，
+这两张图不提交到公开仓库。
 
 ## 隐私要求
 
