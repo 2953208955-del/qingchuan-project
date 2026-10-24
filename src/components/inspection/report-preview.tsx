@@ -21,8 +21,8 @@ export function ReportPreview({
   // True when the persisted report/run still needs human review or a
   // low-confidence detection is unreviewed; the loader computes it.
   exportBlocked?: boolean
-  // Report pages have no page-level selection store to drive, so evidence is
-  // rendered as plain chips there instead of dead buttons.
+  // The print route renders static chips and never reads the selection store;
+  // the report page opts in to the three-way evidence linking.
   interactive?: boolean
   printHref?: string
   // The print route owns its single print affordance (PrintButton), so it
@@ -30,6 +30,11 @@ export function ReportPreview({
   showExport?: boolean
 }) {
   const selectedClaim = useInspectionStore(s => s.selectedClaimId)
+  const selectedDetectionId = useInspectionStore(s => s.selectedDetectionId)
+  const selectedClauseId = useInspectionStore(s => s.selectedClauseId)
+  const setSelectedClaim = useInspectionStore(s => s.setSelectedClaim)
+  const setSelectedDetection = useInspectionStore(s => s.setSelectedDetection)
+  const setSelectedClause = useInspectionStore(s => s.setSelectedClause)
   const blocked = stale || exportBlocked
 
   function exportReport() {
@@ -38,10 +43,38 @@ export function ReportPreview({
     else window.print()
   }
 
+  // Selecting a claim focuses its first cited detection/clause so the image
+  // canvas and clause panel immediately highlight it. Conversely, selecting a
+  // box or clause highlights every claim that cites it.
+  function focusClaim(claim: ReportDraft['claims'][number]) {
+    setSelectedClaim(claim.id)
+    const detectionId = claim.evidenceIds.find(id => id.startsWith('detection:'))
+    const clauseId = claim.evidenceIds.find(id => id.startsWith('clause:'))
+    setSelectedDetection(detectionId ? detectionId.slice('detection:'.length) : null)
+    setSelectedClause(clauseId ? clauseId.slice('clause:'.length) : null)
+  }
+
+  function claimLinkedToSelection(claim: ReportDraft['claims'][number]): boolean {
+    if (!interactive) return false
+    return claim.evidenceIds.some(id =>
+      (selectedDetectionId !== null && id === `detection:${selectedDetectionId}`) ||
+      (selectedClauseId !== null && id === `clause:${selectedClauseId}`),
+    )
+  }
+
   return (
     <article className="space-y-4">
       <header>
         <h1 className="font-heading text-xl font-semibold">{report.title}</h1>
+        {/* Demo data is hand-built; never present it as live model output. */}
+        {report.source === 'manual' && (
+          <p
+            role="note"
+            className="mt-2 inline-flex rounded border border-accent/50 bg-accent/10 px-2 py-1 text-xs text-foreground"
+          >
+            人工构造示例 · 非实时 AI 输出，不代表评测结果
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           {report.location ?? '未填写地点'} · {report.inspectedAt}
         </p>
@@ -76,39 +109,59 @@ export function ReportPreview({
       </section>
 
       <div className="space-y-3">
-        {report.claims.map(claim => (
-          <section
-            key={claim.id}
-            data-claim-id={claim.id}
-            aria-label={SECTION_LABELS[claim.section] ?? claim.section}
-            className={interactive && selectedClaim === claim.id ? 'rounded bg-accent/10 p-2' : ''}
-          >
-            <h2 className="text-sm font-medium">
-              {SECTION_LABELS[claim.section] ?? claim.section}：{claim.text}
-            </h2>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {claim.evidenceIds.map(id => {
-                const kind = id.startsWith('detection:') ? 'detection' : id.startsWith('clause:') ? 'clause' : null
-                if (!kind) {
-                  return <span key={id} className="text-xs text-muted-foreground">{id}</span>
-                }
-                const refId = id.slice(kind.length + 1)
-                if (!interactive) {
+        {report.claims.map(claim => {
+          const active = interactive && selectedClaim === claim.id
+          const linked = claimLinkedToSelection(claim)
+          return (
+            <section
+              key={claim.id}
+              data-claim-id={claim.id}
+              data-linked={linked ? 'true' : undefined}
+              aria-label={SECTION_LABELS[claim.section] ?? claim.section}
+              className={`${active ? 'rounded bg-accent/10 p-2' : ''} ${linked && !active ? 'rounded border-l-2 border-accent bg-accent/5 py-1 pl-2' : ''}`}
+            >
+              <h2 className="text-sm font-medium">
+                {SECTION_LABELS[claim.section] ?? claim.section}：{claim.text}
+              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {claim.evidenceIds.map(id => {
+                  const kind = id.startsWith('detection:') ? 'detection' : id.startsWith('clause:') ? 'clause' : null
+                  if (!kind) {
+                    return <span key={id} className="text-xs text-muted-foreground">{id}</span>
+                  }
+                  const refId = id.slice(kind.length + 1)
+                  if (!interactive) {
+                    return (
+                      <span key={id} title={kind === 'clause' ? '标准条款' : '识别证据'} className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        {id}
+                      </span>
+                    )
+                  }
                   return (
-                    <span key={id} title={kind === 'clause' ? '标准条款' : '识别证据'} className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                    <EvidenceLink
+                      key={id}
+                      type={kind}
+                      refId={refId}
+                      active={kind === 'detection' ? selectedDetectionId === refId : selectedClauseId === refId}
+                    >
                       {id}
-                    </span>
+                    </EvidenceLink>
                   )
-                }
-                return (
-                  <EvidenceLink key={id} type={kind} refId={refId}>
-                    {id}
-                  </EvidenceLink>
-                )
-              })}
-            </div>
-          </section>
-        ))}
+                })}
+                {interactive && (
+                  <button
+                    type="button"
+                    onClick={() => focusClaim(claim)}
+                    aria-pressed={active}
+                    className="rounded border border-border px-1.5 py-0.5 text-xs hover:bg-muted"
+                  >
+                    定位证据
+                  </button>
+                )}
+              </div>
+            </section>
+          )
+        })}
       </div>
 
       <footer className="space-y-1 text-xs text-muted-foreground">

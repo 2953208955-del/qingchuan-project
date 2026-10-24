@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
+import { ClausePanel } from '@/components/inspection/clause-panel'
 import { EvidenceLink } from '@/components/inspection/evidence-link'
 import { ReportPreview } from '@/components/inspection/report-preview'
 import { ReviewQueue } from '@/components/inspection/review-queue'
@@ -108,6 +109,16 @@ describe('ReportPreview', () => {
     expect(metrics.getAllByText('1')).toHaveLength(2)
   })
 
+  it('shows a manual-construction badge for the demo report', () => {
+    render(<ReportPreview report={{ ...report, source: 'manual' }} stale={false} />)
+    expect(screen.getByRole('note')).toHaveTextContent('人工构造示例 · 非实时 AI 输出')
+  })
+
+  it('does not show the manual badge for AI-generated reports', () => {
+    render(<ReportPreview report={{ ...report, source: 'ai' }} stale={false} />)
+    expect(screen.queryByRole('note')).toBeNull()
+  })
+
   it('renders evidence as plain chips without buttons when not interactive', () => {
     render(<ReportPreview report={report} stale={false} interactive={false} />)
     expect(screen.queryByRole('button', { name: 'detection:d1' })).toBeNull()
@@ -120,6 +131,63 @@ describe('ReportPreview', () => {
     render(<ReportPreview report={report} stale={false} printHref="/reports/r1/print" />)
     fireEvent.click(screen.getByRole('button', { name: '导出 PDF' }))
     expect(open).toHaveBeenCalledWith('/reports/r1/print', '_blank', 'noopener')
+  })
+
+  it('links evidence back to the claims that cite it on the report page', () => {
+    render(<ReportPreview report={report} stale={false} />)
+    const claim = document.querySelector('[data-claim-id="c1"]')
+    expect(claim).not.toHaveAttribute('data-linked')
+
+    fireEvent.click(screen.getByRole('button', { name: 'detection:d1' }))
+
+    expect(useInspectionStore.getState().selectedDetectionId).toBe('d1')
+    expect(document.querySelector('[data-claim-id="c1"]')).toHaveAttribute('data-linked', 'true')
+  })
+
+  it('focuses cited detections and clauses when a claim is selected, and links clause evidence back', () => {
+    const linkedReport = {
+      ...report,
+      claims: [{
+        id: 'c1', section: 'summary' as const, text: '发现 1 个塑料瓶',
+        evidenceIds: ['detection:d1', 'clause:clause-1'],
+      }],
+    }
+    render(<ReportPreview report={linkedReport} stale={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '定位证据' }))
+    expect(useInspectionStore.getState().selectedClaimId).toBe('c1')
+    expect(useInspectionStore.getState().selectedDetectionId).toBe('d1')
+    expect(useInspectionStore.getState().selectedClauseId).toBe('clause-1')
+    expect(document.querySelector('[data-claim-id="c1"]')).toHaveAttribute('data-linked', 'true')
+  })
+
+  it('marks a claim as linked when its cited clause is selected', () => {
+    const linkedReport = {
+      ...report,
+      claims: [{
+        id: 'c1', section: 'summary' as const, text: '发现 1 个塑料瓶',
+        evidenceIds: ['clause:clause-1'],
+      }],
+    }
+    render(<ReportPreview report={linkedReport} stale={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'clause:clause-1' }))
+
+    expect(useInspectionStore.getState().selectedClauseId).toBe('clause-1')
+    expect(document.querySelector('[data-claim-id="c1"]')).toHaveAttribute('data-linked', 'true')
+  })
+})
+
+describe('ClausePanel', () => {
+  it('selects a cited clause so its claims can be identified', () => {
+    render(<ClausePanel clauses={[
+      { id: 'clause-1', standardNo: '清川SOP', clauseNo: '第3条', title: '严重度', content: '按加权检出量分级', score: 0.8 },
+    ]} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /清川SOP 第3条/ }))
+
+    expect(useInspectionStore.getState().selectedClauseId).toBe('clause-1')
+    expect(document.querySelector('[data-clause-id="clause-1"]')).toHaveAttribute('aria-current', 'true')
   })
 })
 

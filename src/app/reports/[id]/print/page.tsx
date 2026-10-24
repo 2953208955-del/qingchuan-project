@@ -48,7 +48,9 @@ export default async function ReportPrintPage({ params }: { params: Promise<{ id
         pendingReviewCount={document.pendingReviewCount}
         images={document.images}
         detections={document.detections}
+        citedClauses={document.citedClauses}
         runId={id}
+        runStatus={document.runStatus}
         mode="print"
       />
     </div>

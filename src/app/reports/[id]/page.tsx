@@ -39,7 +39,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           pendingReviewCount={document.pendingReviewCount}
           images={document.images}
           detections={document.detections}
+          citedClauses={document.citedClauses}
           runId={id}
+          runStatus={document.runStatus}
           mode="page"
         />
       </div>

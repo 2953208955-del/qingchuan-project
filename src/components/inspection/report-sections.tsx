@@ -1,7 +1,10 @@
-import type { Detection, ReportDraft, UploadedImage } from '@/lib/domain/schemas'
+import type { Clause, Detection, ReportDraft, RunStatus, UploadedImage } from '@/lib/domain/schemas'
+import { ClausePanel } from './clause-panel'
 import { EvidenceCanvas } from './evidence-canvas'
 import { RegenerateButton } from './regenerate-button'
+import { ReportEvidenceCanvas } from './report-evidence-canvas'
 import { ReportPreview } from './report-preview'
+import { ReportReviewPanel } from './report-review-panel'
 
 // Shared body for the report and print routes. The print variant suppresses the
 // preview's export button because the print page owns the only print action.
@@ -12,7 +15,9 @@ export function ReportSections({
   pendingReviewCount,
   images,
   detections,
+  citedClauses,
   runId,
+  runStatus,
   mode,
 }: {
   report: ReportDraft
@@ -21,7 +26,9 @@ export function ReportSections({
   pendingReviewCount: number
   images: UploadedImage[]
   detections: Detection[]
+  citedClauses: Clause[]
   runId: string
+  runStatus: RunStatus
   mode: 'page' | 'print'
 }) {
   const printable = mode === 'print'
@@ -32,10 +39,19 @@ export function ReportSections({
         report={report}
         stale={stale}
         exportBlocked={exportBlocked}
-        interactive={false}
+        interactive={!printable}
         printHref={printable ? undefined : `/reports/${runId}/print`}
         showExport={!printable}
       />
+
+      {!printable && (
+        <ReportReviewPanel
+          runId={runId}
+          runStatus={runStatus}
+          stale={stale}
+          detections={detections}
+        />
+      )}
 
       {!printable && exportBlocked && (
         <section aria-label="重新生成报告" className="space-y-2 rounded-xl border border-border p-3">
@@ -49,7 +65,11 @@ export function ReportSections({
 
       <section aria-label="引用标准" className="space-y-2">
         <h2 className="text-sm font-medium">引用标准</h2>
-        {report.citations.length === 0 ? (
+        {/* The print route stays static; the page route uses the shared
+            selectable ClausePanel so claims and clauses link both ways. */}
+        {!printable && citedClauses.length > 0 ? (
+          <ClausePanel clauses={citedClauses} />
+        ) : report.citations.length === 0 ? (
           <p className="text-sm text-muted-foreground">无引用</p>
         ) : (
           <ul className="list-inside list-disc text-sm text-muted-foreground">
@@ -77,7 +97,11 @@ export function ReportSections({
 
       <section aria-label="证据附录" className="space-y-2">
         <h2 className="text-sm font-medium">证据附录</h2>
-        <EvidenceCanvas images={images} detections={detections} />
+        {printable ? (
+          <EvidenceCanvas images={images} detections={detections} />
+        ) : (
+          <ReportEvidenceCanvas images={images} detections={detections} claims={report.claims} />
+        )}
       </section>
     </>
   )

@@ -9,13 +9,17 @@ import { useInspectionStore } from '@/stores/inspection-store'
 // detection so clicking a finding in the list (or a report evidence link) always
 // brings its photo into view; the thumbnail row switches manually and clears
 // the selection so the two controls never fight each other.
-export function EvidenceCanvas({ images, detections }: {
+export function EvidenceCanvas({ images, detections, highlightDetectionIds = [] }: {
   images: UploadedImage[]
   detections: Detection[]
+  // All detections cited by the selected report claim; the single selected
+  // detection is already highlighted via the store.
+  highlightDetectionIds?: string[]
 }) {
   const selectedDetectionId = useInspectionStore(s => s.selectedDetectionId)
   const setSelectedDetection = useInspectionStore(s => s.setSelectedDetection)
   const [manualImageId, setManualImageId] = useState<string | null>(null)
+  const highlighted = new Set(highlightDetectionIds)
 
   const analyzed = images.filter(image => image.status === 'analyzed')
   if (analyzed.length === 0) {
@@ -75,9 +79,10 @@ export function EvidenceCanvas({ images, detections }: {
             aria-label={`识别框 ${CATEGORY_LABELS[detection.category]}`}
             aria-pressed={selectedDetectionId === detection.id}
             data-detection-id={detection.id}
+            data-highlighted={highlighted.has(detection.id) ? 'true' : undefined}
             onClick={() => setSelectedDetection(detection.id)}
             className={`absolute border-2 ${
-              selectedDetectionId === detection.id
+              selectedDetectionId === detection.id || highlighted.has(detection.id)
                 ? 'border-accent bg-accent/20'
                 : 'border-primary/70 hover:border-accent'
             }`}
