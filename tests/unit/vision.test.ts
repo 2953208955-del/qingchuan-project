@@ -35,6 +35,21 @@ describe('QwenVisionAnalyzer', () => {
     expect(body.response_format).toEqual({ type: 'json_object' })
   })
 
+  it('clamps out-of-frame boxes and confidence instead of abstaining', async () => {
+    const fetchImpl = vi.fn(async () => response(
+      '{"detections":[{"category":"metal","material":"aluminum","confidence":1.2,"bbox":{"x":0.95,"y":0.9,"w":0.1,"h":0.2},"description":"can"}]}',
+    ))
+    const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })
+    const result = await analyzer.analyze({ imagePath })
+    expect(result.abstained).toBe(false)
+    const detection = result.detections[0]
+    expect(detection.confidence).toBe(1)
+    expect(detection.bbox!.x).toBeCloseTo(0.95)
+    expect(detection.bbox!.y).toBeCloseTo(0.9)
+    expect(detection.bbox!.w).toBeCloseTo(0.05)
+    expect(detection.bbox!.h).toBeCloseTo(0.1)
+  })
+
   it('extracts JSON from fenced output', async () => {
     const fetchImpl = vi.fn(async () => response('```json\n{"detections":[]}\n```'))
     const analyzer = new QwenVisionAnalyzer({ apiKey: 'k', model: 'm', fetchImpl })

@@ -15,6 +15,35 @@ const VisionDetection = z.object({
 const VisionPayload = z.object({ detections: z.array(VisionDetection) })
 export type VisionDetection = z.infer<typeof VisionDetection>
 
+// Raw shapes without the bounds refinement: Qwen occasionally nudges an edge
+// box past 1.0 (e.g. x=0.92, w=0.08), and abstaining the whole image over that
+// rounding is worse than clamping it back to the frame.
+const RawBBox = z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })
+const RawVisionDetection = z.object({
+  category: DebrisCategory,
+  material: z.string().nullable(),
+  confidence: z.number(),
+  bbox: RawBBox.nullable(),
+  description: z.string().max(500),
+})
+const RawVisionPayload = z.object({ detections: z.array(RawVisionDetection) })
+
+function clamp01(n: number): number {
+  return Math.min(Math.max(n, 0), 1)
+}
+
+function normalizeBbox(bbox: z.infer<typeof RawBBox> | null): { x: number; y: number; w: number; h: number } | null {
+  if (!bbox) return null
+  const x = clamp01(bbox.x)
+  const y = clamp01(bbox.y)
+  return {
+    x,
+    y,
+    w: Math.min(clamp01(bbox.w), 1 - x),
+    h: Math.min(clamp01(bbox.h), 1 - y),
+  }
+}
+
 export interface VisionResult {
   detections: VisionDetection[]
   abstained: boolean
@@ -96,12 +125,21 @@ export class QwenVisionAnalyzer implements VisionPort {
         inputTokens += json.usage?.prompt_tokens ?? 0
         outputTokens += json.usage?.completion_tokens ?? 0
         const content = json.choices?.[0]?.message?.content ?? ''
-        const parsed = VisionPayload.safeParse(extractJson(content))
-        if (parsed.success) {
-          return {
-            detections: parsed.data.detections,
-            abstained: false,
-            usage: { inputTokens, outputTokens },
+        const raw = RawVisionPayload.safeParse(extractJson(content))
+        if (raw.success) {
+          const parsed = VisionPayload.safeParse({
+            detections: raw.data.detections.map(d => ({
+              ...d,
+              confidence: clamp01(d.confidence),
+              bbox: normalizeBbox(d.bbox),
+            })),
+          })
+          if (parsed.success) {
+            return {
+              detections: parsed.data.detections,
+              abstained: false,
+              usage: { inputTokens, outputTokens },
+            }
           }
         }
         lastFailure = 'invalid'
