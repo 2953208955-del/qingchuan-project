@@ -1,1 +1,178 @@
-[]
+[
+  {
+    "image": "public/samples/eval/single-01.jpg",
+    "gt": [
+      {
+        "category": "plastic_bottle",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.03,
+          "w": 0.75,
+          "h": 0.72
+        }
+      },
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.25,
+          "y": 0.73,
+          "w": 0.3,
+          "h": 0.25
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-02.jpg",
+    "gt": [
+      {
+        "category": "plastic_bottle",
+        "bbox": {
+          "x": 0.08,
+          "y": 0.15,
+          "w": 0.7,
+          "h": 0.55
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-03.jpg",
+    "gt": [
+      {
+        "category": "plastic_bag",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.97,
+          "h": 0.95
+        }
+      },
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.55,
+          "y": 0.65,
+          "w": 0.3,
+          "h": 0.2
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-04.jpg",
+    "gt": [
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.15,
+          "w": 0.95,
+          "h": 0.8
+        }
+      },
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.15,
+          "y": 0.0,
+          "w": 0.3,
+          "h": 0.15
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-05.jpg",
+    "gt": [
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.95,
+          "h": 0.95
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-06.jpg",
+    "gt": [
+      {
+        "category": "fishing_gear",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.3,
+          "w": 0.95,
+          "h": 0.65
+        }
+      },
+      {
+        "category": "other",
+        "bbox": {
+          "x": 0.08,
+          "y": 0.42,
+          "w": 0.17,
+          "h": 0.13
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-07.jpg",
+    "gt": [
+      {
+        "category": "fishing_gear",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.45,
+          "w": 0.8,
+          "h": 0.5
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-08.jpg",
+    "gt": [
+      {
+        "category": "fishing_gear",
+        "bbox": {
+          "x": 0.02,
+          "y": 0.25,
+          "w": 0.96,
+          "h": 0.65
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-09.jpg",
+    "gt": [
+      {
+        "category": "fishing_gear",
+        "bbox": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 0.7
+        }
+      }
+    ]
+  },
+  {
+    "image": "public/samples/eval/single-10.jpg",
+    "gt": [
+      {
+        "category": "plastic_bottle",
+        "bbox": {
+          "x": 0.15,
+          "y": 0.25,
+          "w": 0.65,
+          "h": 0.55
+        }
+      }
+    ]
+  }
+]

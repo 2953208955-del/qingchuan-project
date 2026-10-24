@@ -51,19 +51,22 @@
 ```
 
 - 数组元素：
-  - `image`：图片文件名；live 模式按 `public/samples/<image>` 解析（见
-    `scripts/eval-detection.ts`）。
+  - `image`：图片文件名或仓库相对路径；裸文件名按 `public/samples/<image>` 解析，
+    带路径分隔符时按仓库根目录解析（见 `scripts/eval-detection.ts`）。
   - `gt`：该图的真实标注，元素为 `{ category, bbox }`。`category` 必须是
     `src/lib/domain/schemas.ts` 中 `DebrisCategory` 的取值；`bbox` 使用归一化坐标
     （相对图片宽高，取值 0–1）：`x`/`y` 为左上角，`w`/`h` 为宽高。
   - `pred`：可选，仅 dry-run 使用，模拟模型预测以验证匹配管线；它不是模型真实输出，
     不能用于证明效果。
-- 当前为 `[]`，这是有意的。没有真实标注就不应有检测数字。
+- 当前包含 10 张 **NOAA 公有领域巡检图的单目标裁片**（`public/samples/eval/single-*.jpg`），
+  每张由人工标注 1–2 个显眼目标。裁片来自 `sample-1.jpg` / `sample-2.jpg` / `sample-3.jpg`
+  的局部；标注为人工绘制、框较粗，不是大规模基准。结果只能作为本项目的自查证据，
+  不应与公开基准的 mAP/F1 直接比较。
 
 #### 补齐检测夹具的步骤
 
-1. 获取**真实**图片（自拍或授权/许可兼容的公开数据），放入 `public/samples/`，
-   文件名与 `image` 字段一致。
+1. 获取**真实**图片（自拍或授权/许可兼容的公开数据），放入 `public/samples/` 或
+   `public/samples/eval/`，路径与 `image` 字段一致。当前裁片均来自 NOAA 公有领域图。
 2. 对每张图逐个人工标注**全部**可见垃圾目标：类别取自 `DebrisCategory`，框紧贴目标，
    坐标为归一化值（`x/图片宽`、`y/图片高`、`w/图片宽`、`h/图片高`）。
 3. 不要为了凑数虚构目标、复制别图标注或使用模型预测冒充 GT。没有把握的图不要加入。
