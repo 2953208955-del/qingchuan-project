@@ -10,3 +10,21 @@ export function scanForInjection(text: string): { suspicious: boolean; matches: 
   const matches = PATTERNS.filter(p => p.re.test(text)).map(p => p.name)
   return { suspicious: matches.length > 0, matches }
 }
+
+// Image descriptions are model output derived from untrusted pixels: OCR text
+// in a photo can contain instructions ("ignore previous instructions"). The
+// reporter must never see them as instructions, and suspicious text is replaced
+// with a neutral marker rather than silently forwarded.
+export const SUSPICIOUS_DESCRIPTION_MARKER = '[已过滤：图像描述包含可疑指令，未采信]'
+
+export function sanitizeImageDescription(text: string): {
+  text: string
+  suspicious: boolean
+  matches: string[]
+} {
+  const scan = scanForInjection(text)
+  if (scan.suspicious) {
+    return { text: SUSPICIOUS_DESCRIPTION_MARKER, suspicious: true, matches: scan.matches }
+  }
+  return { text, suspicious: false, matches: [] }
+}

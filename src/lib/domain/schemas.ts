@@ -70,6 +70,10 @@ export const ReportDraft = z.object({
   title: z.string(),
   location: z.string().nullable(),
   inspectedAt: z.string(),
+  // Provenance is code-authoritative: AI runs write 'ai'; the seeded demo writes
+  // 'manual' so the UI never presents hand-built data as live model output.
+  // Optional for reports stored before provenance existed.
+  source: z.enum(['ai', 'manual']).optional(),
   claims: z.array(ReportClaim).min(1),
   metrics: z.object({
     imageCount: z.number().int().nonnegative(),

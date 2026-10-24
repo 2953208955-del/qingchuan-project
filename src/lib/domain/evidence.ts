@@ -1,3 +1,4 @@
+import { scanForInjection } from '@/lib/safety/injection'
 import type { Clause, Detection, EvidenceRef, ReportDraft } from './schemas'
 
 export interface EvidenceIndex {
@@ -8,7 +9,7 @@ export interface EvidenceIndex {
 }
 
 export interface VerifyIssue {
-  type: 'missing_evidence' | 'unknown_evidence' | 'metric_mismatch' | 'unknown_citation' | 'empty_claims' | 'number_mismatch'
+  type: 'missing_evidence' | 'unknown_evidence' | 'metric_mismatch' | 'unknown_citation' | 'empty_claims' | 'number_mismatch' | 'suspicious_text'
   message: string
   claimId?: string
 }
@@ -80,6 +81,26 @@ export function verifyReport(report: ReportDraft, index: EvidenceIndex): { passe
       if (!index.counts.has(value)) {
         issues.push({ type: 'number_mismatch', message: `结论中的数字 ${value} 不在代码计算结果中`, claimId: claim.id })
       }
+    }
+  }
+
+  // Report prose is model output built on top of untrusted image descriptions.
+  // Fail closed on instruction-like text instead of letting a compromised
+  // draft pass verification; this is rule-based and costs no extra model call.
+  for (const claim of report.claims) {
+    const scan = scanForInjection(claim.text)
+    if (scan.suspicious) {
+      issues.push({
+        type: 'suspicious_text',
+        message: `结论文本包含可疑指令（${scan.matches.join(', ')}）`,
+        claimId: claim.id,
+      })
+    }
+  }
+  for (const text of [report.title, ...report.limitations]) {
+    const scan = scanForInjection(text)
+    if (scan.suspicious) {
+      issues.push({ type: 'suspicious_text', message: `报告文本包含可疑指令（${scan.matches.join(', ')}）` })
     }
   }
 
