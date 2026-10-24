@@ -149,11 +149,19 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 - 请勿拍摄可识别人脸、车牌等个人信息；如不可避免，请先打码。应用会原样保存上传的图片字节，**不会自动剥离 EXIF/GPS**，请在**上传前自行移除**。
 - API Key 只保存在服务器的 `.env` 中，权限 600，不进入 Git；演示样例图需登记来源与许可证。
 
+## 提交状态（2026-10-24）
+
+- 分支 `feat/qingchuan-implementation`（最新提交见 `git log -1`）；未合并、未推送、未建 tag。
+- 质量门：lint 0 error、typecheck、build、**265 单测**、Playwright **3/3** 全绿。
+- 真实评测：RAG Recall@5 **1.00**（35/35）；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
+- 待完成：5–8 分钟视频、≤30 页 PDF、公开仓库与演示地址、团队信息；11/14 冻结后再建 tag。
+- 详见 [提交检查清单](docs/submission-checklist.md)。
+
 ## 团队
 
 | 角色 | 成员 | 分工 |
 | --- | --- | --- |
-| 待补充 | 待补充 | 待补充 |
+| 待补充（提交前填写） | 待补充（提交前填写） | 待补充（提交前填写） |
 
 ## 文档
 
@@ -165,4 +173,4 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 
 ## License
 
-本项目以 [MIT License](https://opensource.org/licenses/MIT) 发布。
+本项目以 [MIT License](LICENSE) 发布。
