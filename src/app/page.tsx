@@ -52,12 +52,16 @@ export default function Home() {
             href="/inspect"
             className="inline-flex items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            开始示例巡检
+            开始巡检
           </Link>
           <span className="text-sm text-muted-foreground">
-            使用内置示例照片，无需准备数据。
+            上传自己的照片体验完整流程；运行 npm run seed 后可在报告库查看人工构造的演示报告。
           </span>
         </div>
+        <p className="mt-4 max-w-2xl text-xs text-muted-foreground">
+          说明：仓库不预置样例照片。内置演示任务是人工构造的示例数据（source: manual），
+          不是实时 AI 输出，也不是评测结果；评测数据仍在准备中。
+        </p>
       </section>
 
       <section aria-labelledby="values-heading" className="mt-12">

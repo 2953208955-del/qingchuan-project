@@ -88,6 +88,8 @@ set -a; . ./.env.local; set +a
 npm run seed
 ```
 
+演示数据说明：`npm run seed` 写入的识别结果与报告是**人工构造的示例数据**（报告内 `source: manual`，页面显示"人工构造示例"徽标），用于演示复核与导出流程；它不是实时 AI 模型输出，也不是评测证据。仓库不预置样例照片，评测结果同样待真实标注与运行后生成。
+
 Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变量；`.env.local` 不会被 Next.js 之外的 `tsx` 脚本自动加载。
 
 ## 常用命令
