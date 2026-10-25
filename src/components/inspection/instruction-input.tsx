@@ -1,14 +1,18 @@
 'use client'
 
-export function InstructionInput({ value, onChange, disabled = false }: {
+import type { Ref } from 'react'
+
+export function InstructionInput({ value, onChange, disabled = false, textareaRef }: {
   value: string
   onChange: (v: string) => void
   disabled?: boolean
+  textareaRef?: Ref<HTMLTextAreaElement>
 }) {
   return (
     <label className="block">
       <span className="holo-label">巡检指令</span>
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={e => onChange(e.target.value)}
         rows={3}

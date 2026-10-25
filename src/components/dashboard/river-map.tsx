@@ -45,8 +45,9 @@ const LEGEND: { key: MapPoint['severity']; label: string }[] = [
   { key: 'natural', label: '自然漂浮物' },
 ]
 
-const MOBILE_MAP_MAX_WIDTH = 640
+const NARROW_VIEWPORT_QUERY = '(max-width: 640px)'
 const MOBILE_MARKER_SIZE = 28
+const DESKTOP_MARKER_SIZE = 34
 const MOBILE_MARKER_GAP = 2
 
 function percent(value: number): string {
@@ -54,23 +55,30 @@ function percent(value: number): string {
 }
 
 /**
- * Real detections can sit on adjacent illustrative anchors. Below 640px their
- * 28px touch targets would otherwise overlap, so fan the visible positions out
- * from the anchor until every centre is at least one full marker apart. The
- * source points and detection data are never mutated.
+ * Real detections can sit on adjacent illustrative anchors. Their square touch
+ * targets (28px below 640px, 34px above) would otherwise overlap, so fan the
+ * visible positions out from the anchor until the boxes are axis-aligned
+ * separated by at least the real marker size plus a 2px gap. The source points
+ * and detection data are never mutated; an unchanged layout returns the
+ * original array so wide screens keep their exact anchors.
  */
 export function spreadNarrowMapPoints(
   points: MapPoint[],
   width: number,
   height: number,
+  markerSize: number = MOBILE_MARKER_SIZE,
 ): MapPoint[] {
-  if (width <= 0 || height <= 0 || width > MOBILE_MAP_MAX_WIDTH) return points
+  if (width <= 0 || height <= 0 || points.length === 0) return points
 
-  const minimumDistance = MOBILE_MARKER_SIZE + MOBILE_MARKER_GAP
-  const margin = MOBILE_MARKER_SIZE / 2 + MOBILE_MARKER_GAP
+  const minimumSeparation = markerSize + MOBILE_MARKER_GAP
+  const margin = markerSize / 2 + MOBILE_MARKER_GAP
+  // Half-step rings with 24 angles give dense enough candidates to place 24
+  // markers deterministically without brute-forcing the whole canvas.
+  const radialStep = minimumSeparation / 2
   const placed: { x: number; y: number }[] = []
+  let moved = false
 
-  return points.map(point => {
+  const result = points.map(point => {
     const originX = (point.x / 100) * width
     const originY = (point.y / 100) * height
     let chosenX = originX
@@ -78,10 +86,10 @@ export function spreadNarrowMapPoints(
 
     // Candidate 0 is the true anchor. The remaining rings fan out
     // deterministically around it, so equal inputs always yield equal layout.
-    for (let index = 0; index < 120; index += 1) {
-      const ring = Math.ceil(index / 12)
-      const radius = ring * minimumDistance
-      const angle = ((index % 12) * Math.PI) / 6 + ring * 0.37
+    for (let index = 0; index < 480; index += 1) {
+      const ring = Math.floor(index / 24)
+      const radius = ring * radialStep
+      const angle = ((index % 24) * Math.PI) / 12 + ring * 0.37
       const candidateX = Math.min(
         width - margin,
         Math.max(margin, originX + Math.cos(angle) * radius),
@@ -90,14 +98,21 @@ export function spreadNarrowMapPoints(
         height - margin,
         Math.max(margin, originY + Math.sin(angle) * radius),
       )
+      // Separating-axis test for equal square boxes: one axis of centre
+      // distance must clear the full marker, not just the Euclidean diagonal.
       const clear = placed.every(
         other =>
-          Math.hypot(candidateX - other.x, candidateY - other.y) >= minimumDistance,
+          Math.abs(candidateX - other.x) >= minimumSeparation ||
+          Math.abs(candidateY - other.y) >= minimumSeparation,
       )
       if (!clear) continue
       chosenX = candidateX
       chosenY = candidateY
       break
+    }
+
+    if (Math.abs(chosenX - originX) > 0.01 || Math.abs(chosenY - originY) > 0.01) {
+      moved = true
     }
 
     placed.push({ x: chosenX, y: chosenY })
@@ -107,6 +122,8 @@ export function spreadNarrowMapPoints(
       y: (chosenY / height) * 100,
     }
   })
+
+  return moved ? result : points
 }
 
 type RiverMapProps = {
@@ -119,6 +136,9 @@ type RiverMapProps = {
 export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
   const [selected, setSelected] = useState<MapPoint | null>(null)
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
+  // The CSS marker size follows the viewport breakpoint, not the canvas width,
+  // so read the same media query instead of inferring it from the canvas.
+  const [markerSize, setMarkerSize] = useState(MOBILE_MARKER_SIZE)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const canvasRef = useRef<HTMLDivElement | null>(null)
@@ -134,6 +154,11 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
           ? current
           : { width: rect.width, height: rect.height },
       )
+      const narrow =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia(NARROW_VIEWPORT_QUERY).matches
+      setMarkerSize(narrow ? MOBILE_MARKER_SIZE : DESKTOP_MARKER_SIZE)
     }
 
     measure()
@@ -143,7 +168,12 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
     return () => observer.disconnect()
   }, [])
 
-  const displayPoints = spreadNarrowMapPoints(points, canvasSize.width, canvasSize.height)
+  const displayPoints = spreadNarrowMapPoints(
+    points,
+    canvasSize.width,
+    canvasSize.height,
+    markerSize,
+  )
 
   const close = useCallback(() => {
     setSelected(null)

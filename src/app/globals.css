@@ -1516,7 +1516,9 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    z-index: 4;
+    /* Above the selected marker (z-index 5): an open dialog must never have
+       its own click target covered by the marker that opened it. */
+    z-index: 6;
     width: min(320px, calc(100% - 32px));
     max-height: calc(100% - 24px);
     overflow-y: auto;
@@ -2361,8 +2363,10 @@
 
   .stats-donut__unit {
     fill: var(--holo-muted);
-    font-size: 10px;
-    letter-spacing: 0.18em;
+    /* SVG user units scale with the 120-unit viewBox. At the 76px chart cap
+       this renders ~10.1 CSS px, meeting the ≥10px desktop unit requirement. */
+    font-size: 16px;
+    letter-spacing: 0.12em;
   }
 
   .stats-legend {
@@ -4949,6 +4953,12 @@
   .report-section__list {
     list-style: disc outside !important;
     padding-left: 22px !important;
+  }
+
+  /* The universal print reset above matches elements, not `::marker`, so the
+     screen rule's cyan bullets would otherwise survive onto white paper. */
+  .report-section__list li::marker {
+    color: #111 !important;
   }
 
   .holo-empty {

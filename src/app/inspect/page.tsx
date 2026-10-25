@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { useRunStream } from '@/hooks/use-run-stream'
 import { UploadDropzone } from '@/components/inspection/upload-dropzone'
@@ -35,6 +35,10 @@ export default function InspectPage() {
   // A ref locks the launch synchronously, before React re-renders with
   // `started`, so two clicks in one frame cannot open two streams.
   const startedRef = useRef(false)
+  const instructionRef = useRef<HTMLTextAreaElement | null>(null)
+  // Set by the reset action; the task panel only exists after the next render,
+  // so focus must wait for that commit instead of targeting a removed node.
+  const refocusInstructionRef = useRef(false)
   const plan = useInspectionStore(s => s.plan)
   const runId = useInspectionStore(s => s.runId)
   const images = useInspectionStore(s => s.images)
@@ -148,6 +152,7 @@ export default function InspectPage() {
     if (running) return
     useInspectionStore.getState().reset()
     startedRef.current = false
+    refocusInstructionRef.current = true
     setStarted(false)
     setFinished(false)
     setFinalStatus(null)
@@ -156,6 +161,14 @@ export default function InspectPage() {
     setInstruction('')
     setLocation('')
   }
+
+  // Restore focus to the instruction field once the reset has swapped the
+  // results view back to the task/plan panels; otherwise focus falls to body.
+  useEffect(() => {
+    if (!refocusInstructionRef.current || started) return
+    refocusInstructionRef.current = false
+    instructionRef.current?.focus()
+  }, [started, finished, error])
 
   // Called by the review queue after a successful PATCH: re-read the run so
   // revised categories/statuses replace the store snapshot. A 409 from the
@@ -187,9 +200,13 @@ export default function InspectPage() {
 
       {started && runId ? (
         <>
-          {finished && (
+          {started && (finished || error) && (
             <div className="inspect-result-bar">
-              <p>本轮巡检已结束。确认证据与报告链接后，可开始新一轮巡检。</p>
+              <p>
+                {finished
+                  ? '本轮巡检已结束。确认证据与报告链接后，可开始新一轮巡检。'
+                  : '本轮巡检已中断，可开始新一轮巡检后重试。'}
+              </p>
               <button type="button" onClick={startNewRound} className="holo-btn holo-btn--primary">
                 新一轮巡检
               </button>
@@ -249,7 +266,12 @@ export default function InspectPage() {
           <HoloPanel title="任务投递" subtitle="上传现场照片并描述本次巡检要求" className="min-w-0">
             <div className="space-y-4">
               <UploadDropzone disabled={busy} onBusyChange={setUploading} />
-              <InstructionInput value={instruction} onChange={updateInstruction} disabled={busy} />
+              <InstructionInput
+                value={instruction}
+                onChange={updateInstruction}
+                disabled={busy}
+                textareaRef={instructionRef}
+              />
 
               <div className="flex flex-wrap items-end gap-4">
                 <VoiceInput onText={updateInstruction} disabled={busy} />

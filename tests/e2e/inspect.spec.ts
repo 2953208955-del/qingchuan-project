@@ -139,4 +139,70 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   await expect(page.getByText('已选 0/20 张')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Agent 执行时间线' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '新一轮巡检' })).toHaveCount(0)
+  // Reset must land the user back in the task form, not on <body>.
+  await expect(page.getByRole('textbox', { name: '巡检指令' })).toBeFocused()
+})
+
+test('offers the reset after a stream dies mid-run and focuses the instruction', async ({ page }) => {
+  const steppedOnly = [
+    'event: step',
+    'data: {"type":"step","runId":"run-1","step":{"id":"s1","step":"analyze_image","status":"done","toolName":"analyzeImage","detail":"1 个目标","latencyMs":12,"costCny":0}}',
+    '',
+    '',
+  ].join('\n')
+
+  await page.route('**/api/uploads', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ filename: 'a.png', path: 'data/uploads/a.png', sha256: 'abc' }),
+  }))
+  await page.route('**/api/runs', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'run-1', instruction: '检查塑料垃圾', location: null }),
+  }))
+  await page.route('**/api/runs/run-1/plan', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      imageCount: 1,
+      focusCategories: [],
+      estimatedSeconds: 5,
+      estimatedCostCny: 0.02,
+      output: 'inspection_report',
+    }),
+  }))
+  await page.route('**/api/runs/run-1/analyze', route => route.fulfill({
+    status: 200,
+    contentType: 'text/event-stream',
+    body: steppedOnly,
+  }))
+  await page.route('**/api/knowledge/search', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ clauses: [], noEvidence: true }),
+  }))
+
+  await page.goto('/inspect')
+  await page.getByRole('textbox', { name: '巡检指令' }).fill('检查塑料垃圾')
+  await page.setInputFiles('input[type=file]', {
+    name: 'a.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(PNG_BASE64, 'base64'),
+  })
+  await expect(page.getByText('已选 1/20 张')).toBeVisible()
+  await page.getByRole('button', { name: '生成计划' }).click()
+  await expect(page.getByRole('dialog', { name: '执行计划确认' })).toBeVisible()
+  await page.getByRole('button', { name: '开始巡检（确认执行计划）' }).click()
+
+  // The step streamed, so the run is no longer startable; without a reset the
+  // user would still be stranded on the partial results view.
+  await expect(page.locator('.inspect-alert')).toContainText('分析连接意外中断')
+  await expect(page.getByText('本轮巡检已中断，可开始新一轮巡检后重试。')).toBeVisible()
+  await page.getByRole('button', { name: '新一轮巡检' }).click()
+
+  await expect(page.getByRole('button', { name: '生成计划' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '巡检指令' })).toHaveValue('')
+  await expect(page.getByRole('textbox', { name: '巡检指令' })).toBeFocused()
+  await expect(page.getByRole('button', { name: '新一轮巡检' })).toHaveCount(0)
 })

@@ -183,7 +183,7 @@ export function StatsBoard({ stats }: { stats: DashboardStats }) {
               <text x="60" y="57" textAnchor="middle" className="stats-donut__total">
                 {stats.totalDetections}
               </text>
-              <text x="60" y="72" textAnchor="middle" className="stats-donut__unit">
+              <text x="60" y="78" textAnchor="middle" className="stats-donut__unit">
                 目标
               </text>
             </svg>

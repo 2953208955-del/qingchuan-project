@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { RiverMap, spreadNarrowMapPoints } from '@/components/dashboard/river-map'
+import { MAP_ANCHORS } from '@/lib/dashboard/map-points'
 import type { DashboardRun } from '@/lib/dashboard/types'
 import type { MapPoint } from '@/lib/dashboard/types'
 
@@ -20,23 +21,53 @@ const run: DashboardRun = {
   images: [], detections: [],
 }
 
-describe('spreadNarrowMapPoints', () => {
-  it('leaves wide-screen anchors untouched but fans out overlapping mobile markers', () => {
-    const dense = [
-      point({ id: 'a', x: 20, y: 50 }),
-      point({ id: 'b', x: 22, y: 50 }),
-      point({ id: 'c', x: 24, y: 50 }),
-    ]
-    expect(spreadNarrowMapPoints(dense, 1200, 480)).toBe(dense)
+const realAnchors = (): MapPoint[] =>
+  MAP_ANCHORS.map((anchor, index) =>
+    point({ id: `dense-${index}`, x: anchor.x, y: anchor.y }),
+  )
 
-    const placed = spreadNarrowMapPoints(dense, 360, 225)
-    for (let i = 0; i < placed.length; i += 1) {
-      for (let j = i + 1; j < placed.length; j += 1) {
-        const dx = ((placed[i].x - placed[j].x) / 100) * 360
-        const dy = ((placed[i].y - placed[j].y) / 100) * 225
-        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(30)
-      }
+function expectAxisAlignedSeparation(
+  placed: MapPoint[],
+  width: number,
+  height: number,
+  separation: number,
+) {
+  for (let i = 0; i < placed.length; i += 1) {
+    for (let j = i + 1; j < placed.length; j += 1) {
+      const dx = (Math.abs(placed[i].x - placed[j].x) / 100) * width
+      const dy = (Math.abs(placed[i].y - placed[j].y) / 100) * height
+      expect(dx >= separation || dy >= separation).toBe(true)
     }
+  }
+}
+
+describe('spreadNarrowMapPoints', () => {
+  it('separates all 24 real anchors with the 28px mobile marker', () => {
+    const anchors = realAnchors()
+    const placed = spreadNarrowMapPoints(anchors, 326, 204, 28)
+
+    expect(placed).not.toBe(anchors)
+    expect(placed).toHaveLength(24)
+    expectAxisAlignedSeparation(placed, 326, 204, 30)
+    for (const point of placed) {
+      expect((point.x / 100) * 326).toBeGreaterThanOrEqual(16)
+      expect((point.x / 100) * 326).toBeLessThanOrEqual(310)
+      expect((point.y / 100) * 204).toBeGreaterThanOrEqual(16)
+      expect((point.y / 100) * 204).toBeLessThanOrEqual(188)
+    }
+  })
+
+  it('separates the 641–740px canvas band with its real 34px markers', () => {
+    const anchors = realAnchors()
+    const placed = spreadNarrowMapPoints(anchors, 700, 438, 34)
+
+    expect(placed).not.toBe(anchors)
+    expectAxisAlignedSeparation(placed, 700, 438, 36)
+  })
+
+  it('leaves the real anchors untouched when they already clear 34px markers', () => {
+    const anchors = realAnchors()
+    expect(spreadNarrowMapPoints(anchors, 1200, 480, 34)).toBe(anchors)
   })
 })
 
