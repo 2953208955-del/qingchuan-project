@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { desc } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { reports } from '@/lib/db/schema'
+import { HoloBadge } from '@/components/holo/holo-badge'
 import { SEVERITY_LABELS, Severity } from '@/lib/domain/schemas'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,12 @@ const STATUS_LABELS: Record<string, string> = {
   draft: '草稿',
   needs_review: '待复核',
   stale: '已过期',
+}
+
+const STATUS_TONES: Record<string, 'cyan' | 'gold' | 'magenta' | 'muted'> = {
+  draft: 'cyan',
+  needs_review: 'gold',
+  stale: 'magenta',
 }
 
 type ReportSummary = {
@@ -58,34 +65,59 @@ export default function ReportsPage() {
   const latest = [...latestByRun.values()].sort((a, b) => b.createdAt - a.createdAt)
 
   return (
-    <div className="space-y-3">
-      <h1 className="text-lg font-semibold">报告库</h1>
-      {latest.length === 0 && <p className="text-sm text-muted-foreground">还没有报告，先去巡检。</p>}
-      {latest.map(row => {
-        const summary = parseSummary(row.contentJson)
-        const stale = row.status === 'stale'
-        return (
-          <Link
-            key={row.runId}
-            href={`/reports/${row.runId}`}
-            className="block rounded-lg border border-border p-3 text-sm hover:bg-muted"
-          >
-            <div className="flex justify-between gap-3">
-              <span>{summary.title}</span>
-              <span className={`shrink-0 text-xs ${stale ? 'text-destructive' : 'text-muted-foreground'}`}>
-                {STATUS_LABELS[row.status] ?? row.status} · {new Date(row.createdAt).toLocaleString('zh-CN')}
-              </span>
-            </div>
-            {(summary.severity !== null || summary.intensity !== null) && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {summary.severity !== null && `严重度 ${SEVERITY_LABELS[summary.severity]}`}
-                {summary.severity !== null && summary.intensity !== null && ' · '}
-                {summary.intensity !== null && `污染强度 ${summary.intensity}`}
-              </p>
-            )}
-          </Link>
-        )
-      })}
+    <div className="reports-library">
+      <header className="reports-hero">
+        <p className="holo-eyebrow">QINGCHUAN · REPORT ARCHIVE</p>
+        <h1>报告库</h1>
+        <p className="reports-hero__lede">
+          每个巡检任务只展示最新版本报告；状态、严重度与污染强度均读取自持久化结果。
+        </p>
+      </header>
+
+      {latest.length === 0 ? (
+        <div className="holo-empty">
+          <span className="holo-empty__mark" aria-hidden>◇</span>
+          <p>还没有报告，先去巡检。</p>
+        </div>
+      ) : (
+        <div className="reports-list">
+          {latest.map(row => {
+            const summary = parseSummary(row.contentJson)
+            return (
+              <Link
+                key={row.runId}
+                href={`/reports/${row.runId}`}
+                className="holo-report-row"
+              >
+                <div className="holo-report-row__head">
+                  <span className="holo-report-row__title">{summary.title}</span>
+                  <span className="holo-report-row__status">
+                    <HoloBadge tone={STATUS_TONES[row.status] ?? 'muted'}>
+                      {STATUS_LABELS[row.status] ?? row.status}
+                    </HoloBadge>
+                    <time
+                      dateTime={new Date(row.createdAt).toISOString()}
+                      className="holo-report-row__time"
+                    >
+                      {new Date(row.createdAt).toLocaleString('zh-CN')}
+                    </time>
+                  </span>
+                </div>
+                {(summary.severity !== null || summary.intensity !== null) && (
+                  <div className="holo-report-row__chips">
+                    {summary.severity !== null && (
+                      <HoloBadge tone="muted">严重度 {SEVERITY_LABELS[summary.severity]}</HoloBadge>
+                    )}
+                    {summary.intensity !== null && (
+                      <HoloBadge tone="cyan">污染强度 {summary.intensity}</HoloBadge>
+                    )}
+                  </div>
+                )}
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

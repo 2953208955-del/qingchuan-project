@@ -63,52 +63,49 @@ export function ReportPreview({
   }
 
   return (
-    <article className="space-y-4">
-      <header>
-        <h1 className="font-heading text-xl font-semibold">{report.title}</h1>
+    <article className="report-article">
+      <header className="report-header">
+        <h1 className="report-title">{report.title}</h1>
         {/* Demo data is hand-built; never present it as live model output. */}
         {report.source === 'manual' && (
-          <p
-            role="note"
-            className="mt-2 inline-flex rounded border border-accent/50 bg-accent/10 px-2 py-1 text-xs text-foreground"
-          >
+          <p role="note" className="report-note">
             人工构造示例 · 非实时 AI 输出，不代表评测结果
           </p>
         )}
-        <p className="text-xs text-muted-foreground">
+        <p className="report-meta">
           {report.location ?? '未填写地点'} · {report.inspectedAt}
         </p>
       </header>
 
       {/* Every number is read from the persisted report metrics; nothing is
           recomputed in the browser. */}
-      <section aria-label="报告指标" className="rounded-xl border border-border p-3">
-        <h2 className="text-sm font-medium">指标摘要</h2>
-        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-muted-foreground">严重度</dt>
+      <section aria-label="报告指标" className="report-metrics">
+        <h2 className="report-section__title">指标摘要</h2>
+        <dl className="report-metrics__grid">
+          <div className="report-metrics__item">
+            <dt>严重度</dt>
             <dd>{SEVERITY_LABELS[report.metrics.severity]}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">污染强度</dt>
+          <div className="report-metrics__item">
+            <dt>污染强度</dt>
             <dd>{report.metrics.intensity}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">图片数</dt>
+          <div className="report-metrics__item">
+            <dt>图片数</dt>
             <dd>{report.metrics.imageCount}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">识别目标数</dt>
+          <div className="report-metrics__item">
+            <dt>识别目标数</dt>
             <dd>{report.metrics.detectionCount}</dd>
           </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">公式版本</dt>
+          <div className="report-metrics__item">
+            <dt>公式版本</dt>
             <dd>{report.metrics.formulaVersion}</dd>
           </div>
         </dl>
       </section>
 
-      <div className="space-y-3">
+      <div className="report-claims">
         {report.claims.map(claim => {
           const active = interactive && selectedClaim === claim.id
           const linked = claimLinkedToSelection(claim)
@@ -118,21 +115,25 @@ export function ReportPreview({
               data-claim-id={claim.id}
               data-linked={linked ? 'true' : undefined}
               aria-label={SECTION_LABELS[claim.section] ?? claim.section}
-              className={`${active ? 'rounded bg-accent/10 p-2' : ''} ${linked && !active ? 'rounded border-l-2 border-accent bg-accent/5 py-1 pl-2' : ''}`}
+              className={`report-claim${active ? ' is-active' : ''}${linked ? ' is-linked' : ''}`}
             >
-              <h2 className="text-sm font-medium">
+              <h2 className="report-claim__title">
                 {SECTION_LABELS[claim.section] ?? claim.section}：{claim.text}
               </h2>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
+              <div className="report-claim__evidence">
                 {claim.evidenceIds.map(id => {
                   const kind = id.startsWith('detection:') ? 'detection' : id.startsWith('clause:') ? 'clause' : null
                   if (!kind) {
-                    return <span key={id} className="text-xs text-muted-foreground">{id}</span>
+                    return <span key={id} className="report-claim__raw">{id}</span>
                   }
                   const refId = id.slice(kind.length + 1)
                   if (!interactive) {
                     return (
-                      <span key={id} title={kind === 'clause' ? '标准条款' : '识别证据'} className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      <span
+                        key={id}
+                        title={kind === 'clause' ? '标准条款' : '识别证据'}
+                        className="holo-chip holo-chip--static"
+                      >
                         {id}
                       </span>
                     )
@@ -153,7 +154,7 @@ export function ReportPreview({
                     type="button"
                     onClick={() => focusClaim(claim)}
                     aria-pressed={active}
-                    className="rounded border border-border px-1.5 py-0.5 text-xs hover:bg-muted"
+                    className="holo-btn report-claim__locate"
                   >
                     定位证据
                   </button>
@@ -164,29 +165,29 @@ export function ReportPreview({
         })}
       </div>
 
-      <footer className="space-y-1 text-xs text-muted-foreground">
+      <footer className="report-footer">
         <p>
           模型：{report.modelInfo.textModel} / {report.modelInfo.visionModel} · Prompt {report.modelInfo.promptVersion}
         </p>
         {stale && (
-          <p role="alert" className="text-destructive">
+          <p role="alert" className="report-alert report-alert--stale">
             识别结果已修改，当前报告已过期；请复核完成后在报告页重新生成报告。
           </p>
         )}
         {!stale && exportBlocked && (
-          <p role="status">
+          <p role="status" className="report-alert report-alert--blocked">
             报告或低置信识别结果尚待人工复核，复核完成前不能导出。
           </p>
         )}
       </footer>
 
       {showExport && (
-        <div className="flex gap-2 print:hidden">
+        <div className="report-actions print:hidden" data-print-hide>
           <button
             type="button"
             onClick={exportReport}
             disabled={blocked}
-            className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="holo-btn holo-btn--primary"
           >
             导出 PDF
           </button>

@@ -38,31 +38,31 @@ export function RegenerateButton({ runId, pendingCount }: { runId: string; pendi
 
   if (pendingCount > 0) {
     return (
-      <div className="space-y-1">
+      <div className="report-regenerate">
         <button
           type="button"
           disabled
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+          className="holo-btn"
         >
           还需复核 {pendingCount} 项
         </button>
-        <p className="text-xs text-muted-foreground">复核完所有低置信结果后才能重新生成报告。</p>
+        <p className="report-hint">复核完所有低置信结果后才能重新生成报告。</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-1">
+    <div className="report-regenerate">
       <button
         type="button"
         onClick={regenerate}
         disabled={busy}
-        className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+        className="holo-btn holo-btn--primary"
       >
         {busy ? '正在重新生成…' : '重新生成报告'}
       </button>
-      {done && <p role="status" className="text-xs text-primary">报告已重新生成。</p>}
-      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+      {done && <p role="status" className="report-success">报告已重新生成。</p>}
+      {error && <p role="alert" className="inspect-alert">{error}</p>}
     </div>
   )
 }

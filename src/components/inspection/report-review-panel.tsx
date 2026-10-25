@@ -35,9 +35,9 @@ export function ReportReviewPanel({
       : '以下低置信识别结果必须先确认、删除或纠正，之后才能重新生成报告并导出。'
 
   return (
-    <section aria-label="报告复核" className="space-y-2 rounded-xl border border-border p-3">
-      <h2 className="text-sm font-medium">人工复核</h2>
-      <p className="text-xs text-muted-foreground">{note}</p>
+    <section aria-label="报告复核" className="report-section report-review" data-print-hide>
+      <h2 className="report-section__title">人工复核</h2>
+      <p className="report-section__hint report-review__note">{note}</p>
       <ReviewQueue
         runId={runId}
         detections={pending}

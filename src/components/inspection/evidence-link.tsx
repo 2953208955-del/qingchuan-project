@@ -21,9 +21,7 @@ export function EvidenceLink({
       type="button"
       aria-pressed={active}
       onClick={() => (type === 'detection' ? setDetection(refId) : setClause(refId))}
-      className={`rounded px-1 text-xs underline decoration-dotted underline-offset-2 hover:decoration-solid ${
-        active ? 'bg-accent/15 text-foreground' : 'text-primary'
-      }`}
+      className="holo-chip"
     >
       {children}
     </button>
