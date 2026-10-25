@@ -4771,7 +4771,15 @@
   .review-card,
   .timeline-step,
   .detection-row,
-  .evidence-frame {
+  .evidence-frame,
+  .knowledge-search,
+  .knowledge-search__input,
+  .knowledge-clause,
+  .knowledge-alert,
+  .knowledge-status--empty,
+  .eval-metric,
+  .eval-dry-run,
+  .eval-commands li {
     border: 1px solid #d4d4d4 !important;
     border-radius: 0 !important;
     background: #fff !important;
@@ -4787,8 +4795,22 @@
   .evidence-frame::before,
   .evidence-frame::after,
   .holo-panel__title::before,
-  .holo-panel__title::after {
+  .holo-panel__title::after,
+  .knowledge-search::before,
+  .knowledge-search::after,
+  .knowledge-clause::before,
+  .knowledge-clause::after,
+  .knowledge-status--searching::before,
+  .eval-generated::before,
+  .eval-generated::after,
+  .eval-metric::before,
+  .eval-metric::after {
     display: none !important;
+  }
+
+  /* HoloPanel's header rule is a separate cyan hairline from the panel border. */
+  .eval-panel .holo-panel__head {
+    border-bottom-color: #d4d4d4 !important;
   }
 
   .holo-panel__head,
