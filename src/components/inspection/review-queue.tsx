@@ -66,16 +66,16 @@ export function ReviewQueue({
 
   return (
     <section aria-label="复核队列" className="space-y-2">
-      <h2 className="text-sm font-medium" aria-live="polite">
+      <h2 className="review-heading" aria-live="polite">
         需复核 {pending.length} 项
       </h2>
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="inspect-alert">
           {error}
         </p>
       )}
       {pending.length === 0 && (
-        <p className="text-xs text-muted-foreground">暂无待复核项。</p>
+        <p className="inspect-meta">暂无待复核项。</p>
       )}
       {pending.map(detection => {
         const label = CATEGORY_LABELS[detection.category]
@@ -87,23 +87,23 @@ export function ReviewQueue({
             data-review-id={detection.id}
             role="group"
             aria-label={`${label}复核项`}
-            className="space-y-2 rounded-lg border border-border p-2 text-sm"
+            className="review-card"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5">
+            <div className="review-card__head">
+              <span className="review-card__label">
                 {label}
                 {detection.confidence < LOW_CONFIDENCE && (
-                  <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] text-destructive">低置信度</span>
+                  <span className="holo-badge holo-badge--magenta">低置信度</span>
                 )}
               </span>
-              <span className="text-xs text-muted-foreground">{Math.round(detection.confidence * 100)}%</span>
+              <span className="review-card__confidence">{Math.round(detection.confidence * 100)}%</span>
             </div>
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="review-card__actions">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => update(detection, 'confirmed')}
-                className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-50"
+                className="holo-btn"
               >
                 确认
               </button>
@@ -111,7 +111,7 @@ export function ReviewQueue({
                 type="button"
                 disabled={busy}
                 onClick={() => update(detection, 'rejected')}
-                className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-50"
+                className="holo-btn holo-btn--ghost"
               >
                 删除
               </button>
@@ -123,7 +123,7 @@ export function ReviewQueue({
                   ...prev,
                   [detection.id]: event.target.value as DebrisCategory | '',
                 }))}
-                className="rounded border border-border bg-background px-1 py-0.5 text-xs disabled:opacity-50"
+                className="holo-input"
               >
                 <option value="">纠正类别</option>
                 {CATEGORY_OPTIONS.map(([value, text]) => (
@@ -136,7 +136,7 @@ export function ReviewQueue({
                 type="button"
                 disabled={busy || correction === ''}
                 onClick={() => correction !== '' && update(detection, 'corrected', correction)}
-                className="rounded border border-border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-50"
+                className="holo-btn"
               >
                 纠错
               </button>

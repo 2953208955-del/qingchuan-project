@@ -12,6 +12,7 @@ import { EvidenceCanvas } from '@/components/inspection/evidence-canvas'
 import { DetectionList } from '@/components/inspection/detection-list'
 import { ClausePanel } from '@/components/inspection/clause-panel'
 import { ReviewQueue } from '@/components/inspection/review-queue'
+import { HoloPanel } from '@/components/holo/holo-panel'
 import { fetchRunResults } from '@/lib/api/run-results'
 import { Plan } from '@/lib/domain/schemas'
 
@@ -160,82 +161,119 @@ export default function InspectPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">巡检工作台</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <div className="inspect-workbench">
+      <header className="inspect-hero">
+        <p className="holo-eyebrow">QINGCHUAN · INSPECTION WORKBENCH</p>
+        <h1>巡检工作台</h1>
+        <p className="inspect-hero__lede">
           上传现场照片，描述巡检要求，确认执行计划后由 Agent 完成识别、取证与报告生成。
         </p>
       </header>
 
-      <UploadDropzone disabled={busy} onBusyChange={setUploading} />
-      <InstructionInput value={instruction} onChange={updateInstruction} disabled={busy} />
-
-      <div className="flex flex-wrap items-start gap-4">
-        <VoiceInput onText={updateInstruction} disabled={busy} />
-        <label className="block text-sm">
-          地点（选填）
-          <input
-            value={location}
-            onChange={e => updateLocation(e.target.value)}
-            disabled={busy}
-            placeholder="例如：清川河 XX 桥段"
-            className="mt-1 block w-64 rounded-lg border border-border bg-background p-2 disabled:opacity-50"
-          />
-        </label>
-      </div>
-
-      <button
-        type="button"
-        onClick={createPlan}
-        disabled={busy || uploading || !instruction.trim() || images.length === 0}
-        className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-      >
-        {planning ? '生成计划中…' : '生成计划'}
-      </button>
-
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-
-      {plan && (
-        <PlanConfirm
-          plan={plan}
-          onConfirm={handleConfirmPlan}
-          onCancel={cancelPlan}
-          disabled={busy || started}
-        />
-      )}
-
-      {started && runId && (
+      {started && runId ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div>
-            {finished ? (
-              <EvidenceCanvas images={images} detections={detections} />
-            ) : (
-              <section aria-label="证据画布" className="rounded-xl border border-dashed border-border p-6">
-                <p className="text-sm text-muted-foreground">
-                  {running ? '分析进行中，识别框将在分析完成后显示。' : '分析未完成，暂无识别结果。'}
-                </p>
-              </section>
+          <div className="min-w-0 space-y-4">
+            <HoloPanel
+              title="证据画布"
+              subtitle={finished ? '识别框可点选，金色为当前证据' : undefined}
+            >
+              {finished ? (
+                <EvidenceCanvas images={images} detections={detections} />
+              ) : (
+                <section aria-label="证据画布" className="holo-empty">
+                  <p>
+                    {running ? '分析进行中，识别框将在分析完成后显示。' : '分析未完成，暂无识别结果。'}
+                  </p>
+                </section>
+              )}
+            </HoloPanel>
+
+            {error && (
+              <p role="alert" className="inspect-alert">
+                {error}
+              </p>
             )}
           </div>
-          <aside className="space-y-4">
-            <AgentTimeline runId={runId} finalStatus={finalStatus} />
-            <DetectionList detections={detections} />
-            {finished && <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />}
+
+          <aside className="min-w-0 space-y-4">
+            <HoloPanel title="Agent 执行时间线">
+              <AgentTimeline runId={runId} finalStatus={finalStatus} />
+            </HoloPanel>
+            <HoloPanel title="识别结果">
+              <DetectionList detections={detections} />
+            </HoloPanel>
+            {finished && (
+              <HoloPanel title="复核队列">
+                <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />
+              </HoloPanel>
+            )}
             {reportStale && (
-              <p role="status" aria-live="polite" className="text-xs text-destructive">
+              <p role="status" aria-live="polite" className="inspect-stale">
                 识别结果已复核修改，现有报告已过期，请到报告页重新生成报告。
               </p>
             )}
-            <section aria-label="检索到的标准条款" className="space-y-2">
-              <h2 className="text-sm font-medium">标准条款</h2>
-              <ClausePanel clauses={clauses} />
-            </section>
+            <HoloPanel title="标准条款">
+              <section aria-label="检索到的标准条款">
+                <ClausePanel clauses={clauses} />
+              </section>
+            </HoloPanel>
           </aside>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)]">
+          <HoloPanel title="任务投递" subtitle="上传现场照片并描述本次巡检要求" className="min-w-0">
+            <div className="space-y-4">
+              <UploadDropzone disabled={busy} onBusyChange={setUploading} />
+              <InstructionInput value={instruction} onChange={updateInstruction} disabled={busy} />
+
+              <div className="flex flex-wrap items-end gap-4">
+                <VoiceInput onText={updateInstruction} disabled={busy} />
+                <label className="block min-w-0 flex-1 basis-64">
+                  <span className="holo-label">地点（选填）</span>
+                  <input
+                    value={location}
+                    onChange={e => updateLocation(e.target.value)}
+                    disabled={busy}
+                    placeholder="例如：清川河 XX 桥段"
+                    className="holo-input mt-2"
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={createPlan}
+                  disabled={busy || uploading || !instruction.trim() || images.length === 0}
+                  className="holo-btn holo-btn--primary min-w-36"
+                >
+                  {planning ? '生成计划中…' : '生成计划'}
+                </button>
+              </div>
+
+              {error && (
+                <p role="alert" className="inspect-alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </HoloPanel>
+
+          <HoloPanel title="执行计划" subtitle="确认后启动 Agent 巡检" className="min-w-0">
+            {plan ? (
+              <PlanConfirm
+                plan={plan}
+                onConfirm={handleConfirmPlan}
+                onCancel={cancelPlan}
+                disabled={busy || started}
+              />
+            ) : (
+              <div className="holo-empty">
+                <span className="holo-empty__mark" aria-hidden>◇</span>
+                <p>确认巡检要求后生成执行计划</p>
+              </div>
+            )}
+          </HoloPanel>
         </div>
       )}
     </div>

@@ -23,30 +23,25 @@ export function AgentTimeline({ runId = null, finalStatus = null }: {
 
   return (
     <section aria-label="Agent 执行时间线" className="space-y-2">
-      <h2 className="text-sm font-medium">Agent 执行时间线</h2>
-      {steps.length === 0 && <p className="text-sm text-muted-foreground">等待开始…</p>}
+      {steps.length === 0 && <p className="inspect-meta">等待开始…</p>}
       {steps.map(step => (
-        <div
-          key={step.id}
-          className="rounded-lg border border-border px-3 py-2 text-sm"
-          data-step-status={step.status}
-        >
-          <div className="flex items-center gap-2">
-            <span aria-hidden>{ICONS[step.status]}</span>
-            <span className="font-medium">{step.step}</span>
-            {step.toolName && <code className="text-xs text-muted-foreground">{step.toolName}</code>}
+        <div key={step.id} className="timeline-step" data-step-status={step.status}>
+          <div className="timeline-step__head">
+            <span className="timeline-step__icon" aria-hidden>{ICONS[step.status]}</span>
+            <span className="timeline-step__name">{step.step}</span>
+            {step.toolName && <code className="timeline-step__tool">{step.toolName}</code>}
             {step.latencyMs != null && (
-              <span className="ml-auto text-xs text-muted-foreground">{step.latencyMs}ms</span>
+              <span className="timeline-step__latency">{step.latencyMs}ms</span>
             )}
           </div>
-          {step.detail && <p className="mt-1 text-xs text-muted-foreground">{step.detail}</p>}
+          {step.detail && <p className="timeline-step__detail">{step.detail}</p>}
         </div>
       ))}
       {finalStatus && (
-        <p className="text-sm" aria-live="polite">
-          运行状态：<span className="font-medium">{RUN_STATUS_LABELS[finalStatus] ?? finalStatus}</span>
+        <p className="timeline-status" aria-live="polite">
+          运行状态：<span className="is-strong">{RUN_STATUS_LABELS[finalStatus] ?? finalStatus}</span>
           {runId && (
-            <Link href={`/reports/${runId}`} className="ml-2 text-sm text-primary underline underline-offset-2">
+            <Link href={`/reports/${runId}`} className="timeline-link">
               查看报告
             </Link>
           )}

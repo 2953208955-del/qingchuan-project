@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { ImagePlus } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { MAX_IMAGES_PER_RUN } from '@/lib/domain/limits'
@@ -39,6 +40,7 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputId = useId()
   const images = useInspectionStore(s => s.images)
 
   async function onFiles(files: FileList | null) {
@@ -110,8 +112,11 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
   }
 
   return (
-    <section aria-label="上传图片" className="rounded-xl border border-dashed border-border p-4">
+    <section aria-label="上传图片" className="space-y-3">
+      {/* The native input stays in the DOM for assistive tech and for tests;
+          the dashed zone is its label, so a click anywhere opens the picker. */}
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
@@ -119,15 +124,26 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
         aria-label="选择巡检图片"
         disabled={disabled || busy}
         onChange={e => onFiles(e.target.files)}
-        className="block w-full text-sm disabled:opacity-50"
+        className="sr-only"
       />
-      <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+      <label
+        htmlFor={inputId}
+        className="upload-zone"
+        data-disabled={disabled || busy ? 'true' : undefined}
+      >
+        <span className="upload-zone__icon" aria-hidden>
+          <ImagePlus size={20} strokeWidth={1.4} />
+        </span>
+        <span className="upload-zone__title">投放或选择巡检照片</span>
+        <span className="upload-zone__hint">点击选择图片 · 支持 JPEG、PNG、WebP，单张不超过 15MB</span>
+      </label>
+      <p className="inspect-meta" aria-live="polite">
         {busy
           ? `正在上传 ${progress?.done ?? 0}/${progress?.total ?? 0}…`
           : `已选 ${images.length}/${MAX_IMAGES_PER_RUN} 张，单张不超过 15MB，支持 JPEG、PNG、WebP`}
       </p>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-destructive">
+        <p role="alert" className="inspect-alert">
           {error}
         </p>
       )}

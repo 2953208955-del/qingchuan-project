@@ -8,7 +8,7 @@ export function ClausePanel({ clauses }: { clauses: Clause[] }) {
   const setSelectedClause = useInspectionStore(s => s.setSelectedClause)
 
   if (clauses.length === 0) {
-    return <p className="text-xs text-muted-foreground">知识库中未找到相关条款，本报告将不引用标准。</p>
+    return <p className="clause-empty">知识库中未找到相关条款，本报告将不引用标准。</p>
   }
 
   return (
@@ -20,19 +20,19 @@ export function ClausePanel({ clauses }: { clauses: Clause[] }) {
             key={clause.id}
             data-clause-id={clause.id}
             aria-current={selected ? 'true' : undefined}
-            className={`rounded-lg border border-border p-2 text-sm ${selected ? 'bg-accent/15' : ''}`}
+            className="clause-card"
           >
             {/* Clicking a clause identifies every claim that cites it. */}
             <button
               type="button"
               onClick={() => setSelectedClause(clause.id)}
               aria-pressed={selected}
-              className="w-full text-left"
+              className="clause-card__button"
             >
-              <h3 className="text-xs font-medium">
+              <h3 className="clause-card__title">
                 {clause.standardNo} {clause.clauseNo} · {clause.title}
               </h3>
-              <p className="mt-1 text-xs text-muted-foreground">{clause.content}</p>
+              <p className="clause-card__body">{clause.content}</p>
             </button>
           </article>
         )

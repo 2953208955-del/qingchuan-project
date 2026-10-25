@@ -68,7 +68,7 @@ export function VoiceInput({ onText, disabled = false }: { onText: (text: string
     }
   }, [])
 
-  if (!supported) return <p className="text-xs text-muted-foreground">当前浏览器不支持语音，请使用文本输入</p>
+  if (!supported) return <p className="inspect-meta">当前浏览器不支持语音，请使用文本输入</p>
 
   function startListening() {
     const rec = recRef.current
@@ -84,18 +84,18 @@ export function VoiceInput({ onText, disabled = false }: { onText: (text: string
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="voice-input">
       <button
         type="button"
         onClick={startListening}
         disabled={listening || disabled}
         aria-label={listening ? '正在聆听语音指令' : '使用语音输入巡检指令'}
-        className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50"
+        className="holo-btn"
       >
         {listening ? '聆听中…' : '🎙 语音指令'}
       </button>
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="inspect-alert">
           {error}
         </p>
       )}
