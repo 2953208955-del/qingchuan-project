@@ -2522,6 +2522,346 @@
       font-size: 9px;
     }
   }
+
+  /* Command-screen home (Task 8). Scoped to .dashboard* so it cannot leak. */
+  .holo-eyebrow {
+    margin: 0 0 6px;
+    color: var(--holo-cyan);
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.32em;
+    line-height: 1.4;
+    opacity: 0.7;
+  }
+
+  .dashboard {
+    min-width: 0;
+  }
+
+  .dashboard-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .dashboard-hero__intro {
+    min-width: 0;
+  }
+
+  .dashboard-hero__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px 14px;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-hero h1 {
+    margin: 0;
+    color: var(--holo-text);
+    font-size: clamp(25px, 2.35vw, 38px);
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    line-height: 1.15;
+    text-shadow: 0 0 28px rgba(116, 230, 242, 0.22);
+  }
+
+  .dashboard-hero__task {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    padding-bottom: 4px;
+  }
+
+  .dashboard-hero__task-label {
+    color: var(--holo-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "map"
+      "replay"
+      "stats";
+    gap: 16px;
+  }
+
+  .dashboard-grid__map,
+  .dashboard-grid__replay,
+  .dashboard-grid__stats {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .dashboard-grid__map {
+    grid-area: map;
+  }
+
+  .dashboard-grid__replay {
+    grid-area: replay;
+  }
+
+  .dashboard-grid__stats {
+    grid-area: stats;
+  }
+
+  .dashboard-grid__replay > .holo-panel,
+  .dashboard-grid__stats > .holo-panel {
+    width: 100%;
+  }
+
+  @media (min-width: 1180px) {
+    .dashboard-grid {
+      height: calc(100vh - 72px - 48px);
+      grid-template-columns: minmax(0, 1fr) 400px;
+      grid-template-rows: minmax(0, 42fr) minmax(0, 58fr);
+      grid-template-areas:
+        "map replay"
+        "map stats";
+      gap: 20px;
+    }
+
+    .dashboard-grid__map,
+    .dashboard-grid__replay,
+    .dashboard-grid__stats {
+      display: flex;
+    }
+
+    .dashboard-grid__map > .holo-panel.river-map {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .dashboard-grid__replay > .holo-panel.replay,
+    .dashboard-grid__stats > .holo-panel.stats-board {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dashboard-grid__replay .holo-panel__body,
+    .dashboard-grid__stats .holo-panel__body {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    /* The grid row defines the replay cell. Flexing the stage keeps it inside
+       that cell while its 220px floor prevents the scan frame from collapsing. */
+    .dashboard-grid__replay > .holo-panel.replay .holo-panel__body {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 10px;
+    }
+
+    .dashboard-grid__replay > .holo-panel.replay .replay {
+      flex: 1;
+      min-height: 0;
+      gap: 4px;
+    }
+
+    .dashboard-grid__replay .replay__head,
+    .dashboard-grid__replay .replay-controls {
+      flex: 0 0 auto;
+    }
+
+    .dashboard-grid__replay .replay-controls .holo-btn {
+      min-height: 32px;
+      padding: 6px 12px;
+    }
+
+    .dashboard-grid__replay .replay-stage {
+      height: auto;
+      flex: 1 1 0;
+      min-height: 220px;
+      container-type: size;
+    }
+
+    /* Container units keep the frame inside the flex-shrunk stage. The base
+       replay rule caps against the viewport, which would crop portrait frames
+       here where the stage is necessarily shorter. */
+    .dashboard-grid__replay .replay-image {
+      max-width: 100cqw !important;
+      max-height: 100cqh !important;
+    }
+
+    /* Dense board variant so the right column's 42/58 rows fit at 1440×900
+       without scrolling inside the panel or hiding any counts. */
+    .dashboard-grid__stats .holo-panel__head {
+      padding: 10px 14px 8px;
+    }
+
+    .dashboard-grid__stats .holo-panel__body {
+      min-height: 0;
+      gap: 8px;
+      padding: 8px 12px;
+      overflow-y: auto;
+    }
+
+    .dashboard-grid__stats .stats-kpis {
+      gap: 8px;
+    }
+
+    .dashboard-grid__stats .stats-kpi {
+      min-height: 64px;
+      gap: 3px;
+      padding: 6px 8px;
+    }
+
+    .dashboard-grid__stats .stats-kpi__value {
+      font-size: clamp(23px, 2.1vw, 30px);
+    }
+
+    .dashboard-grid__stats .stats-kpi__label {
+      font-size: 10px;
+    }
+
+    .dashboard-grid__stats .stats-charts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .dashboard-grid__stats .stats-card {
+      padding: 8px;
+    }
+
+    .dashboard-grid__stats .stats-card__title {
+      margin-bottom: 4px;
+    }
+
+    .dashboard-grid__stats .stats-donut__chart {
+      max-width: 76px;
+    }
+
+    .dashboard-grid__stats .stats-legend {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 3px 6px;
+      margin-top: 5px;
+    }
+
+    .dashboard-grid__stats .stats-legend__item {
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .dashboard-grid__stats .stats-details {
+      margin-top: 5px;
+      padding-top: 5px;
+    }
+
+    .dashboard-grid__stats .stats-confidence__caption {
+      margin-top: 3px;
+    }
+
+    .dashboard-grid__stats .stats-confidence__bins {
+      margin-top: 4px;
+      gap: 2px;
+    }
+
+    .dashboard-grid__stats .stats-confidence__bin-label,
+    .dashboard-grid__stats .stats-confidence__bin-count {
+      font-size: 8px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  @media (min-width: 1441px) {
+    .dashboard-grid__stats .stats-kpi {
+      min-height: 82px;
+    }
+
+    .dashboard-grid__stats .stats-donut__chart {
+      max-width: 128px;
+    }
+
+    .dashboard-grid__stats .holo-panel__body {
+      padding: 16px 18px;
+    }
+  }
+
+  @media (min-width: 1180px) and (max-width: 1440px) {
+    .dashboard-grid {
+      grid-template-columns: minmax(0, 1fr) 340px;
+    }
+  }
+
+  /* Short desktop windows scroll instead of overlapping the right column. */
+  @media (min-width: 1180px) and (max-height: 899px) {
+    .dashboard-grid {
+      height: auto;
+      grid-template-rows: auto auto;
+    }
+
+    .dashboard-grid__map {
+      min-height: 480px;
+    }
+
+    .dashboard-grid__replay > .holo-panel.replay,
+    .dashboard-grid__stats > .holo-panel.stats-board {
+      height: auto;
+      overflow: visible;
+    }
+
+    .dashboard-grid__replay .replay-stage {
+      flex: none;
+      height: clamp(220px, 34vh, 420px);
+    }
+
+    .dashboard-grid__stats .stats-charts {
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    }
+  }
+
+  @media (max-width: 1179px) {
+    .dashboard-hero {
+      margin-bottom: 12px;
+    }
+
+    .dashboard-grid .holo-panel.river-map {
+      height: auto;
+    }
+
+    .dashboard-grid .river-map__canvas {
+      flex: none;
+      min-height: 0;
+      aspect-ratio: 16 / 10;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-hero {
+      align-items: flex-start;
+      gap: 8px 16px;
+    }
+
+    .dashboard-hero h1 {
+      font-size: 24px;
+      letter-spacing: 0.1em;
+    }
+
+    .dashboard-hero__task {
+      padding-bottom: 0;
+    }
+
+    .dashboard-grid {
+      gap: 14px;
+    }
+  }
 }
 
 @keyframes holo-sweep {

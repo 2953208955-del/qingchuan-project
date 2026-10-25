@@ -14,7 +14,9 @@ export default defineConfig({
   use: { baseURL: BASE_URL },
   webServer: {
     command: `npm run dev -- -p ${PORT}`,
-    url: BASE_URL,
+    // Probe a static asset, not `/`: the home page opens SQLite during Next's
+    // readiness request, which would cache a handle to the pre-seed database.
+    url: `${BASE_URL}/favicon.ico`,
     reuseExistingServer: false,
     timeout: 180_000,
     env: { DATA_DIR },
