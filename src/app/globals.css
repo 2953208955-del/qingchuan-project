@@ -193,12 +193,14 @@
 
 @layer components {
   .holo-app {
+    display: flow-root;
     min-height: 100vh;
     position: relative;
     isolation: isolate;
   }
 
   .holo-app__content {
+    display: flow-root;
     position: relative;
     z-index: 1;
     min-height: 100vh;
@@ -2623,7 +2625,6 @@
 
   @media (min-width: 1180px) {
     .dashboard-grid {
-      height: calc(100vh - 72px - 48px);
       grid-template-columns: minmax(0, 1fr) 400px;
       grid-template-rows: minmax(0, 42fr) minmax(0, 58fr);
       grid-template-areas:
@@ -2780,6 +2781,28 @@
     }
   }
 
+  /* Pin the command screen to one viewport only when the viewport can hold the
+     panels. 140px = topbar top margin (20) + topbar min-height (72) + page top
+     padding (20) + page bottom padding (28); the hero takes the rest of
+     .dashboard and the grid flexes into what remains. */
+  @media (min-width: 1180px) and (min-height: 1000px) {
+    .dashboard {
+      display: flex;
+      height: calc(100vh - 140px);
+      min-height: 0;
+      flex-direction: column;
+    }
+
+    .dashboard-hero {
+      flex: 0 0 auto;
+    }
+
+    .dashboard-grid {
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+  }
+
   @media (min-width: 1441px) {
     .dashboard-grid__stats .stats-kpi {
       min-height: 82px;
@@ -2800,8 +2823,9 @@
     }
   }
 
-  /* Short desktop windows scroll instead of overlapping the right column. */
-  @media (min-width: 1180px) and (max-height: 899px) {
+  /* Desktop windows too short to hold the panels scroll naturally instead of
+     compressing or cropping the replay stage and map. */
+  @media (min-width: 1180px) and (max-height: 999px) {
     .dashboard-grid {
       height: auto;
       grid-template-rows: auto auto;
