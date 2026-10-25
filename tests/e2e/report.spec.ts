@@ -7,6 +7,7 @@ test('client wiring: blocked notice, review action, regenerate request and succe
   await page.goto('/reports')
   const entry = page.getByRole('link', { name: /E2E 验收报告/ })
   await expect(entry).toBeVisible()
+  await expect(entry.getByText('待复核', { exact: true })).toHaveClass(/holo-badge--magenta/)
   await entry.click()
 
   await expect(page.getByRole('heading', { level: 1, name: 'E2E 验收报告' })).toBeVisible()

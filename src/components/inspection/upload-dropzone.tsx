@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useRef, useState } from 'react'
+import { useId, useRef, useState, type DragEvent } from 'react'
 import { ImagePlus } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { useInspectionStore } from '@/stores/inspection-store'
@@ -37,15 +37,17 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
   onBusyChange?: (busy: boolean) => void
 }) {
   const [busy, setBusy] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const inputId = useId()
   const images = useInspectionStore(s => s.images)
+  const locked = disabled || busy
 
   async function onFiles(files: FileList | null) {
-    // Guard against a picker opened before the parent disabled uploading.
-    if (!files?.length || disabled) return
+    // Guard against a picker or drop opened before the parent disabled upload.
+    if (!files?.length || locked) return
     // Snapshot before awaiting: the input may be reset while uploads run.
     const all = Array.from(files)
     const already = useInspectionStore.getState().images.length
@@ -111,6 +113,33 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
     }
   }
 
+  function onDragOver(event: DragEvent<HTMLLabelElement>) {
+    // Always cancel the browser's default file navigation, even while locked.
+    event.preventDefault()
+    if (locked) {
+      event.dataTransfer.dropEffect = 'none'
+      setDragActive(false)
+      return
+    }
+    event.dataTransfer.dropEffect = 'copy'
+    if (!dragActive) setDragActive(true)
+  }
+
+  function onDragLeave(event: DragEvent<HTMLLabelElement>) {
+    const nextTarget = event.relatedTarget
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return
+    setDragActive(false)
+  }
+
+  function onDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    setDragActive(false)
+    // The same disabled/busy guard also protects drops that started before a
+    // plan request disabled the zone.
+    if (locked) return
+    void onFiles(event.dataTransfer.files)
+  }
+
   return (
     <section aria-label="上传图片" className="space-y-3">
       {/* The native input stays in the DOM for assistive tech and for tests;
@@ -122,20 +151,24 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
         accept="image/jpeg,image/png,image/webp"
         multiple
         aria-label="选择巡检图片"
-        disabled={disabled || busy}
+        disabled={locked}
         onChange={e => onFiles(e.target.files)}
         className="sr-only"
       />
       <label
         htmlFor={inputId}
         className="upload-zone"
-        data-disabled={disabled || busy ? 'true' : undefined}
+        data-disabled={locked ? 'true' : undefined}
+        data-drag-active={dragActive && !locked ? 'true' : undefined}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       >
         <span className="upload-zone__icon" aria-hidden>
           <ImagePlus size={20} strokeWidth={1.4} />
         </span>
         <span className="upload-zone__title">投放或选择巡检照片</span>
-        <span className="upload-zone__hint">点击选择图片 · 支持 JPEG、PNG、WebP，单张不超过 15MB</span>
+        <span className="upload-zone__hint">点击选择或拖入图片 · 支持 JPEG、PNG、WebP，单张不超过 15MB</span>
       </label>
       <p className="inspect-meta" aria-live="polite">
         {busy

@@ -100,6 +100,21 @@ describe('RiverMap', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('titles and marks a long free-text location for bounded truncation', () => {
+    const longLocation = '清川河下游联合巡检河段'.repeat(24)
+    render(
+      <RiverMap
+        run={{ ...run, location: longLocation }}
+        points={[]}
+        hiddenCount={0}
+        summary={{ totalRuns: 1, reportCount: 1, clauseCount: 0 }}
+      />,
+    )
+    const location = screen.getByText(longLocation)
+    expect(location).toHaveClass('river-map__location')
+    expect(location).toHaveAttribute('title', longLocation)
+  })
+
   it('falls back to 未填写地点 for a run with no location and 暂无任务 without a run', () => {
     const { unmount } = render(
       <RiverMap run={{ ...run, location: null }} points={[]} hiddenCount={0} summary={{ totalRuns: 1, reportCount: 0, clauseCount: 0 }} />,

@@ -216,7 +216,12 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
       subtitle="示意航线 · 点位来自真实识别"
       actions={
         <HoloBadge tone="gold">
-          {run ? run.location ?? '未填写地点' : '暂无任务'}
+          <span
+            className="river-map__location"
+            title={run ? run.location ?? '未填写地点' : '暂无任务'}
+          >
+            {run ? run.location ?? '未填写地点' : '暂无任务'}
+          </span>
         </HoloBadge>
       }
     >

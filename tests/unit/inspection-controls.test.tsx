@@ -1,14 +1,22 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, it, expect } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { InstructionInput } from '@/components/inspection/instruction-input'
 import { PlanConfirm } from '@/components/inspection/plan-confirm'
 import { UploadDropzone } from '@/components/inspection/upload-dropzone'
 import { useInspectionStore } from '@/stores/inspection-store'
 
+vi.mock('browser-image-compression', () => ({
+  default: vi.fn(async (file: File) => file),
+}))
+
 beforeEach(() => useInspectionStore.setState(useInspectionStore.getInitialState()))
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  vi.clearAllMocks()
+})
 
 describe('InspectionInput', () => {
   it('disables the instruction textarea while a plan request is running', () => {
@@ -21,6 +29,45 @@ describe('UploadDropzone', () => {
   it('disables the file input when the parent is planning', () => {
     render(<UploadDropzone disabled />)
     expect(screen.getByLabelText('选择巡检图片')).toBeDisabled()
+  })
+
+  it('uploads a dropped file through the existing files path', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ filename: 'drop.png', path: 'data/uploads/drop.png', sha256: 'abc' }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const file = new File(['dropped'], 'drop.png', { type: 'image/png' })
+    const { container } = render(<UploadDropzone />)
+    const zone = container.querySelector('.upload-zone') as HTMLElement
+
+    fireEvent.dragOver(zone, {
+      dataTransfer: { files: [file], types: ['Files'], dropEffect: 'none' },
+    })
+    expect(zone).toHaveAttribute('data-drag-active', 'true')
+
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+
+    await waitFor(() => expect(useInspectionStore.getState().images).toHaveLength(1))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(zone).not.toHaveAttribute('data-drag-active')
+  })
+
+  it('ignores drops while disabled', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const file = new File(['dropped'], 'drop.png', { type: 'image/png' })
+    const { container } = render(<UploadDropzone disabled />)
+    const zone = container.querySelector('.upload-zone') as HTMLElement
+
+    fireEvent.dragOver(zone, {
+      dataTransfer: { files: [file], types: ['Files'], dropEffect: 'none' },
+    })
+    expect(zone).not.toHaveAttribute('data-drag-active')
+
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(useInspectionStore.getState().images).toHaveLength(0)
   })
 })
 

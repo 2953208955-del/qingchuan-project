@@ -3,21 +3,10 @@ import { desc } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { reports } from '@/lib/db/schema'
 import { HoloBadge } from '@/components/holo/holo-badge'
+import { reportStatusPresentation } from '@/lib/domain/report-status'
 import { SEVERITY_LABELS, Severity } from '@/lib/domain/schemas'
 
 export const dynamic = 'force-dynamic'
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: '草稿',
-  needs_review: '待复核',
-  stale: '已过期',
-}
-
-const STATUS_TONES: Record<string, 'cyan' | 'gold' | 'magenta' | 'muted'> = {
-  draft: 'cyan',
-  needs_review: 'gold',
-  stale: 'magenta',
-}
 
 type ReportSummary = {
   title: string
@@ -83,6 +72,7 @@ export default function ReportsPage() {
         <div className="reports-list">
           {latest.map(row => {
             const summary = parseSummary(row.contentJson)
+            const status = reportStatusPresentation(row.status)
             return (
               <Link
                 key={row.runId}
@@ -92,9 +82,7 @@ export default function ReportsPage() {
                 <div className="holo-report-row__head">
                   <span className="holo-report-row__title">{summary.title}</span>
                   <span className="holo-report-row__status">
-                    <HoloBadge tone={STATUS_TONES[row.status] ?? 'muted'}>
-                      {STATUS_LABELS[row.status] ?? row.status}
-                    </HoloBadge>
+                    <HoloBadge tone={status.tone}>{status.label}</HoloBadge>
                     <time
                       dateTime={new Date(row.createdAt).toISOString()}
                       className="holo-report-row__time"

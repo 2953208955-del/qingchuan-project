@@ -1356,6 +1356,28 @@
     padding: 16px 18px 18px;
   }
 
+  /* A free-text location is user data: let the actions wrap and cap the badge,
+     then ellipsize its text instead of widening the panel past the viewport. */
+  .holo-panel.river-map .holo-panel__head {
+    flex-wrap: wrap;
+  }
+
+  .holo-panel.river-map .holo-panel__actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .holo-panel.river-map .holo-panel__actions .holo-badge {
+    max-width: min(320px, 100%);
+  }
+
+  .river-map__location {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .river-map__canvas {
     position: relative;
     isolation: isolate;
@@ -3151,6 +3173,17 @@
     outline-offset: 3px;
   }
 
+  .upload-zone[data-drag-active="true"] {
+    border-style: solid;
+    border-color: rgba(116, 230, 242, 0.85);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(116, 230, 242, 0.2), transparent 64%),
+      rgba(3, 16, 20, 0.5);
+    box-shadow:
+      inset 0 0 36px rgba(2, 10, 14, 0.24),
+      0 0 36px rgba(116, 230, 242, 0.16);
+  }
+
   .upload-zone[data-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
@@ -3813,6 +3846,7 @@
     font-weight: 300;
     line-height: 1.25;
     letter-spacing: 0.08em;
+    overflow-wrap: anywhere;
     text-shadow: 0 0 22px rgba(116, 230, 242, 0.18);
   }
 
@@ -3831,11 +3865,13 @@
   }
 
   .report-meta {
+    min-width: 0;
     margin: 0;
     color: var(--holo-muted);
     font-size: 11.5px;
     line-height: 1.5;
     letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
   }
 
   .report-section__title {
