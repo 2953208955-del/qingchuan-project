@@ -1885,7 +1885,10 @@
     display: flex;
     width: 100%;
     min-width: 0;
-    min-height: 220px;
+    /* A definite stage height is what makes the 100% max-height rules on
+       .replay-media and .replay-image resolvable; without it a tall portrait
+       frame would grow past the dashboard cell. */
+    height: clamp(220px, 34vh, 420px);
     align-items: center;
     justify-content: center;
     overflow: hidden;
@@ -1960,6 +1963,11 @@
     display: block;
     max-width: 100%;
     max-height: 100%;
+    /* The inline 100% cap alone cannot resolve while the media wrapper is
+       shrink-wrapping, so cap the rendered image against the viewport too.
+       With its width still auto the media element stays exactly image-sized
+       and detection-box percentages keep aligning. */
+    max-height: clamp(180px, 30vh, 380px) !important;
     width: auto;
     height: auto;
   }
