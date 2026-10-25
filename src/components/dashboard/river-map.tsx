@@ -45,8 +45,68 @@ const LEGEND: { key: MapPoint['severity']; label: string }[] = [
   { key: 'natural', label: '自然漂浮物' },
 ]
 
+const MOBILE_MAP_MAX_WIDTH = 640
+const MOBILE_MARKER_SIZE = 28
+const MOBILE_MARKER_GAP = 2
+
 function percent(value: number): string {
   return `${Math.round(value * 100)}%`
+}
+
+/**
+ * Real detections can sit on adjacent illustrative anchors. Below 640px their
+ * 28px touch targets would otherwise overlap, so fan the visible positions out
+ * from the anchor until every centre is at least one full marker apart. The
+ * source points and detection data are never mutated.
+ */
+export function spreadNarrowMapPoints(
+  points: MapPoint[],
+  width: number,
+  height: number,
+): MapPoint[] {
+  if (width <= 0 || height <= 0 || width > MOBILE_MAP_MAX_WIDTH) return points
+
+  const minimumDistance = MOBILE_MARKER_SIZE + MOBILE_MARKER_GAP
+  const margin = MOBILE_MARKER_SIZE / 2 + MOBILE_MARKER_GAP
+  const placed: { x: number; y: number }[] = []
+
+  return points.map(point => {
+    const originX = (point.x / 100) * width
+    const originY = (point.y / 100) * height
+    let chosenX = originX
+    let chosenY = originY
+
+    // Candidate 0 is the true anchor. The remaining rings fan out
+    // deterministically around it, so equal inputs always yield equal layout.
+    for (let index = 0; index < 120; index += 1) {
+      const ring = Math.ceil(index / 12)
+      const radius = ring * minimumDistance
+      const angle = ((index % 12) * Math.PI) / 6 + ring * 0.37
+      const candidateX = Math.min(
+        width - margin,
+        Math.max(margin, originX + Math.cos(angle) * radius),
+      )
+      const candidateY = Math.min(
+        height - margin,
+        Math.max(margin, originY + Math.sin(angle) * radius),
+      )
+      const clear = placed.every(
+        other =>
+          Math.hypot(candidateX - other.x, candidateY - other.y) >= minimumDistance,
+      )
+      if (!clear) continue
+      chosenX = candidateX
+      chosenY = candidateY
+      break
+    }
+
+    placed.push({ x: chosenX, y: chosenY })
+    return {
+      ...point,
+      x: (chosenX / width) * 100,
+      y: (chosenY / height) * 100,
+    }
+  })
 }
 
 type RiverMapProps = {
@@ -58,8 +118,32 @@ type RiverMapProps = {
 
 export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
   const [selected, setSelected] = useState<MapPoint | null>(null)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return undefined
+
+    const measure = () => {
+      const rect = canvas.getBoundingClientRect()
+      setCanvasSize(current =>
+        current.width === rect.width && current.height === rect.height
+          ? current
+          : { width: rect.width, height: rect.height },
+      )
+    }
+
+    measure()
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const observer = new ResizeObserver(measure)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [])
+
+  const displayPoints = spreadNarrowMapPoints(points, canvasSize.width, canvasSize.height)
 
   const close = useCallback(() => {
     setSelected(null)
@@ -83,9 +167,13 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [selected])
 
-  function openPoint(event: React.MouseEvent<HTMLButtonElement>, point: MapPoint) {
+  function togglePoint(event: React.MouseEvent<HTMLButtonElement>, point: MapPoint) {
     event.stopPropagation()
     triggerRef.current = event.currentTarget
+    if (selected?.id === point.id) {
+      setSelected(null)
+      return
+    }
     setSelected(point)
   }
 
@@ -96,9 +184,14 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
       className="river-map"
       title="河道态势"
       subtitle="示意航线 · 点位来自真实识别"
-      actions={<HoloBadge tone="gold">{run?.location || '暂无任务'}</HoloBadge>}
+      actions={
+        <HoloBadge tone="gold">
+          {run ? run.location ?? '未填写地点' : '暂无任务'}
+        </HoloBadge>
+      }
     >
       <div
+        ref={canvasRef}
         className="river-map__canvas"
         onClick={() => {
           if (selected) close()
@@ -226,7 +319,7 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
         <span className="river-map__tag">河段态势 · 示意</span>
 
         {run !== null &&
-          points.map(point => (
+          displayPoints.map(point => (
             <button
               key={point.id}
               type="button"
@@ -235,7 +328,7 @@ export function RiverMap({ run, points, hiddenCount, summary }: RiverMapProps) {
               style={{ left: `${point.x}%`, top: `${point.y}%` }}
               aria-label={`${point.label}，置信度 ${percent(point.confidence)}，${REVIEW_STATUS_LABELS[point.reviewStatus]}`}
               aria-pressed={selected?.id === point.id}
-              onClick={event => openPoint(event, point)}
+              onClick={event => togglePoint(event, point)}
             >
               <span className="river-map__pulse" aria-hidden="true" />
               <span className="river-map__dot" aria-hidden="true" />

@@ -142,6 +142,21 @@ export default function InspectPage() {
     useInspectionStore.getState().setPlan(null)
   }
 
+  // A finished run replaces the task/plan panels, so without an explicit reset
+  // the only way to launch a second inspection would be a full page reload.
+  function startNewRound() {
+    if (running) return
+    useInspectionStore.getState().reset()
+    startedRef.current = false
+    setStarted(false)
+    setFinished(false)
+    setFinalStatus(null)
+    setReportStale(false)
+    setError(null)
+    setInstruction('')
+    setLocation('')
+  }
+
   // Called by the review queue after a successful PATCH: re-read the run so
   // revised categories/statuses replace the store snapshot. A 409 from the
   // report endpoint means the review marked the report stale.
@@ -171,54 +186,64 @@ export default function InspectPage() {
       </header>
 
       {started && runId ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="min-w-0 space-y-4">
-            <HoloPanel
-              title="证据画布"
-              subtitle={finished ? '识别框可点选，金色为当前证据' : undefined}
-            >
-              {finished ? (
-                <EvidenceCanvas images={images} detections={detections} />
-              ) : (
-                <section aria-label="证据画布" className="holo-empty">
-                  <p>
-                    {running ? '分析进行中，识别框将在分析完成后显示。' : '分析未完成，暂无识别结果。'}
-                  </p>
-                </section>
-              )}
-            </HoloPanel>
-
-            {error && (
-              <p role="alert" className="inspect-alert">
-                {error}
-              </p>
-            )}
-          </div>
-
-          <aside className="min-w-0 space-y-4">
-            <HoloPanel title="Agent 执行时间线">
-              <AgentTimeline runId={runId} finalStatus={finalStatus} />
-            </HoloPanel>
-            <HoloPanel title="识别结果">
-              <DetectionList detections={detections} />
-            </HoloPanel>
-            {finished && (
-              <HoloPanel title="复核队列">
-                <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />
+        <>
+          {finished && (
+            <div className="inspect-result-bar">
+              <p>本轮巡检已结束。确认证据与报告链接后，可开始新一轮巡检。</p>
+              <button type="button" onClick={startNewRound} className="holo-btn holo-btn--primary">
+                新一轮巡检
+              </button>
+            </div>
+          )}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-4">
+              <HoloPanel
+                title="证据画布"
+                subtitle={finished ? '识别框可点选，金色为当前证据' : undefined}
+              >
+                {finished ? (
+                  <EvidenceCanvas images={images} detections={detections} />
+                ) : (
+                  <section aria-label="证据画布" className="holo-empty">
+                    <p>
+                      {running ? '分析进行中，识别框将在分析完成后显示。' : '分析未完成，暂无识别结果。'}
+                    </p>
+                  </section>
+                )}
               </HoloPanel>
-            )}
-            {reportStale && (
-              <p role="status" aria-live="polite" className="inspect-stale">
-                识别结果已复核修改，现有报告已过期，请到报告页重新生成报告。
-              </p>
-            )}
-            <HoloPanel title="标准条款">
-              <section aria-label="检索到的标准条款">
-                <ClausePanel clauses={clauses} />
-              </section>
-            </HoloPanel>
-          </aside>
-        </div>
+
+              {error && (
+                <p role="alert" className="inspect-alert">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <aside className="min-w-0 space-y-4">
+              <HoloPanel title="Agent 执行时间线">
+                <AgentTimeline runId={runId} finalStatus={finalStatus} />
+              </HoloPanel>
+              <HoloPanel title="识别结果">
+                <DetectionList detections={detections} />
+              </HoloPanel>
+              {finished && (
+                <HoloPanel title="复核队列">
+                  <ReviewQueue runId={runId} detections={detections} onChanged={refetchResults} />
+                </HoloPanel>
+              )}
+              {reportStale && (
+                <p role="status" aria-live="polite" className="inspect-stale">
+                  识别结果已复核修改，现有报告已过期，请到报告页重新生成报告。
+                </p>
+              )}
+              <HoloPanel title="标准条款">
+                <section aria-label="检索到的标准条款">
+                  <ClausePanel clauses={clauses} />
+                </section>
+              </HoloPanel>
+            </aside>
+          </div>
+        </>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)]">
           <HoloPanel title="任务投递" subtitle="上传现场照片并描述本次巡检要求" className="min-w-0">

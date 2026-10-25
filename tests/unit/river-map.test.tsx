@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
-import { RiverMap } from '@/components/dashboard/river-map'
+import { RiverMap, spreadNarrowMapPoints } from '@/components/dashboard/river-map'
 import type { DashboardRun } from '@/lib/dashboard/types'
 import type { MapPoint } from '@/lib/dashboard/types'
 
@@ -20,6 +20,26 @@ const run: DashboardRun = {
   images: [], detections: [],
 }
 
+describe('spreadNarrowMapPoints', () => {
+  it('leaves wide-screen anchors untouched but fans out overlapping mobile markers', () => {
+    const dense = [
+      point({ id: 'a', x: 20, y: 50 }),
+      point({ id: 'b', x: 22, y: 50 }),
+      point({ id: 'c', x: 24, y: 50 }),
+    ]
+    expect(spreadNarrowMapPoints(dense, 1200, 480)).toBe(dense)
+
+    const placed = spreadNarrowMapPoints(dense, 360, 225)
+    for (let i = 0; i < placed.length; i += 1) {
+      for (let j = i + 1; j < placed.length; j += 1) {
+        const dx = ((placed[i].x - placed[j].x) / 100) * 360
+        const dy = ((placed[i].y - placed[j].y) / 100) * 225
+        expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(30)
+      }
+    }
+  })
+})
+
 describe('RiverMap', () => {
   it('renders one button per point and the illustrative labels', () => {
     render(<RiverMap run={run} points={[point(), point({ id: 'p2', severity: 'review' })]} hiddenCount={0} summary={{ totalRuns: 5, reportCount: 4, clauseCount: 6 }} />)
@@ -28,14 +48,36 @@ describe('RiverMap', () => {
     expect(screen.getByText(/累计任务 5 · 报告 4 · 标准条款 6/)).toBeInTheDocument()
   })
 
-  it('opens a dialog with real detection data and closes on Escape', () => {
+  it('opens a dialog with real detection data, closes on Escape and returns focus', () => {
     render(<RiverMap run={run} points={[point()]} hiddenCount={0} summary={{ totalRuns: 1, reportCount: 1, clauseCount: 0 }} />)
-    fireEvent.click(document.querySelector('[data-map-point="p1"]')!)
+    const marker = document.querySelector('[data-map-point="p1"]') as HTMLButtonElement
+    fireEvent.click(marker)
     expect(screen.getByRole('dialog', { name: '塑料瓶识别详情' })).toBeInTheDocument()
     expect(screen.getByText('92%')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看完整报告' })).toHaveAttribute('href', '/reports/demo-run-001')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(marker)
+  })
+
+  it('closes the popover when the open marker is pressed again', () => {
+    render(<RiverMap run={run} points={[point()]} hiddenCount={0} summary={{ totalRuns: 1, reportCount: 1, clauseCount: 0 }} />)
+    const marker = document.querySelector('[data-map-point="p1"]')!
+    fireEvent.click(marker)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.click(marker)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('falls back to 未填写地点 for a run with no location and 暂无任务 without a run', () => {
+    const { unmount } = render(
+      <RiverMap run={{ ...run, location: null }} points={[]} hiddenCount={0} summary={{ totalRuns: 1, reportCount: 0, clauseCount: 0 }} />,
+    )
+    expect(screen.getByText('未填写地点')).toBeInTheDocument()
+    unmount()
+
+    render(<RiverMap run={null} points={[]} hiddenCount={0} summary={{ totalRuns: 0, reportCount: 0, clauseCount: 0 }} />)
+    expect(screen.getByText('暂无任务')).toBeInTheDocument()
   })
 
   it('shows 报告尚未生成 when the run has no report', () => {

@@ -285,13 +285,13 @@
 
   .holo-backdrop__ripple--outer {
     transform: rotate(-9deg) scaleY(0.72);
-    animation: holo-float 34s ease-in-out infinite;
+    animation: holo-float-outer 34s ease-in-out infinite;
   }
 
   .holo-backdrop__ripple--inner {
     stroke: rgba(90, 167, 255, 0.1);
     transform: rotate(8deg) scale(0.62) scaleY(0.82);
-    animation: holo-float 42s ease-in-out infinite reverse;
+    animation: holo-float-inner 42s ease-in-out infinite reverse;
   }
 
   .holo-backdrop__ripple circle {
@@ -1472,6 +1472,12 @@
     transition: transform 200ms ease;
   }
 
+  .river-map__point:hover,
+  .river-map__point:focus-visible,
+  .river-map__point[aria-pressed="true"] {
+    z-index: 5;
+  }
+
   .river-map__point:hover .river-map__dot,
   .river-map__point[aria-pressed="true"] .river-map__dot {
     transform: scale(1.35);
@@ -1541,6 +1547,8 @@
     display: grid;
     width: 28px;
     height: 28px;
+    min-width: 28px;
+    min-height: 28px;
     padding: 0;
     place-items: center;
     border: 1px solid transparent;
@@ -1640,6 +1648,10 @@
   }
 
   .river-map__report-link {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    padding: 2px 1px;
     color: var(--holo-gold);
     font-size: 12px;
     letter-spacing: 0.08em;
@@ -1786,7 +1798,32 @@
       padding: 12px;
     }
 
+    /* Keep the 28px touch target but shrink the visible core and pulse so
+       neighbouring detections read as separate points at 390px. */
+    .river-map__point {
+      width: 28px;
+      height: 28px;
+    }
+
+    .river-map__pulse {
+      width: 16px;
+      height: 16px;
+      opacity: 0.42;
+    }
+
+    .river-map__dot,
+    .river-map__point:hover .river-map__dot,
+    .river-map__point[aria-pressed="true"] .river-map__dot {
+      width: 6px;
+      height: 6px;
+      box-shadow:
+        0 0 5px currentColor,
+        0 0 11px currentColor;
+      transform: none;
+    }
+
     .river-map__popover {
+      width: min(300px, calc(100% - 20px));
       padding: 12px 12px 10px;
     }
 
@@ -2324,8 +2361,8 @@
 
   .stats-donut__unit {
     fill: var(--holo-muted);
-    font-size: 8px;
-    letter-spacing: 0.24em;
+    font-size: 10px;
+    letter-spacing: 0.18em;
   }
 
   .stats-legend {
@@ -2482,7 +2519,7 @@
 
   .stats-confidence__bin-label {
     color: var(--holo-muted);
-    font-size: 9.5px;
+    font-size: 10px;
     letter-spacing: 0;
     line-height: 1.2;
     white-space: nowrap;
@@ -2521,7 +2558,7 @@
 
     .stats-confidence__bin-label,
     .stats-confidence__bin-count {
-      font-size: 9px;
+      font-size: 10px;
     }
   }
 
@@ -2755,8 +2792,8 @@
     }
 
     .dashboard-grid__stats .stats-legend__item {
-      font-size: 9px;
-      line-height: 1.2;
+      font-size: 10px;
+      line-height: 1.25;
     }
 
     .dashboard-grid__stats .stats-details {
@@ -2775,7 +2812,7 @@
 
     .dashboard-grid__stats .stats-confidence__bin-label,
     .dashboard-grid__stats .stats-confidence__bin-count {
-      font-size: 8px;
+      font-size: 10px;
       white-space: normal;
       overflow-wrap: anywhere;
     }
@@ -2918,6 +2955,31 @@
     font-size: 12.5px;
     line-height: 1.65;
     letter-spacing: 0.04em;
+  }
+
+  .inspect-result-bar {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 10px 12px 10px 16px;
+    border: 1px solid rgba(116, 230, 242, 0.18);
+    border-radius: 12px;
+    background: rgba(4, 20, 25, 0.36);
+  }
+
+  .inspect-result-bar p {
+    margin: 0;
+    color: var(--holo-muted);
+    font-size: 11.5px;
+    line-height: 1.55;
+    letter-spacing: 0.03em;
+  }
+
+  .inspect-result-bar .holo-btn {
+    flex: 0 0 auto;
   }
 
   .inspect-meta {
@@ -3547,6 +3609,12 @@
     min-width: 0;
   }
 
+  .reports-library {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .reports-hero {
     min-width: 0;
   }
@@ -3790,11 +3858,20 @@
 
   .report-section__list {
     margin: 0;
-    padding-left: 18px;
+    padding-left: 22px;
+    list-style: disc outside;
     color: var(--holo-muted);
     font-size: 12px;
     line-height: 1.7;
     letter-spacing: 0.03em;
+  }
+
+  .report-section__list li + li {
+    margin-top: 2px;
+  }
+
+  .report-section__list li::marker {
+    color: var(--holo-cyan);
   }
 
   .report-metrics {
@@ -4583,6 +4660,28 @@
   }
 }
 
+/* The ripple layers need their base rotation/squash in every keyframe; a plain
+   holo-float animation would replace the whole transform and flatten them. */
+@keyframes holo-float-outer {
+  0%,
+  100% {
+    transform: rotate(-9deg) scaleY(0.72) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(-9deg) scaleY(0.72) translate3d(10px, -26px, 0);
+  }
+}
+
+@keyframes holo-float-inner {
+  0%,
+  100% {
+    transform: rotate(8deg) scale(0.62) scaleY(0.82) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(8deg) scale(0.62) scaleY(0.82) translate3d(10px, -26px, 0);
+  }
+}
+
 @keyframes holo-route {
   to {
     stroke-dashoffset: -240;
@@ -4651,17 +4750,22 @@
   }
 }
 
-@media (max-width: 640px) {
-  .holo-panel {
-    border-radius: 18px;
-  }
+/* Keep these overrides inside the component layer so page-specific mobile
+   padding (map, replay, report, eval) still wins by specificity, and Tailwind
+   utilities can opt out where a page needs something different. */
+@layer components {
+  @media (max-width: 640px) {
+    .holo-panel {
+      border-radius: 18px;
+    }
 
-  .holo-panel__head {
-    padding: 16px 16px 14px;
-  }
+    .holo-panel__head {
+      padding: 16px 16px 14px;
+    }
 
-  .holo-panel__body {
-    padding: 16px;
+    .holo-panel__body {
+      padding: 16px;
+    }
   }
 }
 
@@ -4823,8 +4927,28 @@
     background: transparent !important;
   }
 
+  /* The report body is a flex column on screen; on paper it must be a normal
+     block with breathing room so it paginates and never touches the border. */
   .report-panel .holo-panel__body {
-    padding: 0 !important;
+    display: block !important;
+    padding: 10px 12px !important;
+  }
+
+  .report-panel .holo-panel__body > * + * {
+    margin-top: 12px !important;
+  }
+
+  .report-panel .report-article {
+    display: block !important;
+  }
+
+  .report-panel .report-article > * + * {
+    margin-top: 12px !important;
+  }
+
+  .report-section__list {
+    list-style: disc outside !important;
+    padding-left: 22px !important;
   }
 
   .holo-empty {
@@ -4836,9 +4960,16 @@
   .holo-btn,
   .report-note {
     border-color: #c4c4c4 !important;
+    border-radius: 0 !important;
     background: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
+  }
+
+  .holo-input::placeholder {
+    color: #555 !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #555 !important;
   }
 
   .holo-badge::before {

@@ -40,7 +40,7 @@ export function SiteNav() {
   const pathname = usePathname() ?? '/'
 
   return (
-    <aside className="holo-nav print:hidden" aria-label="导航">
+    <aside className="holo-nav print:hidden">
       <Link href="/" className="holo-nav__brand" aria-label="清川">
         <span className="holo-nav__brand-mark" aria-hidden="true">
           川
@@ -55,35 +55,40 @@ export function SiteNav() {
 
       <nav className="holo-nav__nav" aria-label="主导航">
         <div className="holo-nav__groups">
-          {NAV_GROUPS.map((group) => (
-            <section className="holo-nav__group" key={group.label}>
-              <p className="holo-nav__group-label">{group.label}</p>
-              <ul className="holo-nav__list">
-                {group.items.map((item) => {
-                  const active = isActiveRoute(pathname, item.href)
-                  const Icon = item.icon
+          {NAV_GROUPS.map((group, groupIndex) => {
+            const groupLabelId = `holo-nav-group-${groupIndex}`
+            return (
+              <section className="holo-nav__group" key={group.label}>
+                <p className="holo-nav__group-label" id={groupLabelId}>
+                  {group.label}
+                </p>
+                <ul className="holo-nav__list" aria-labelledby={groupLabelId}>
+                  {group.items.map((item) => {
+                    const active = isActiveRoute(pathname, item.href)
+                    const Icon = item.icon
 
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        aria-current={active ? 'page' : undefined}
-                        className={`holo-nav__link${active ? ' is-active' : ''}`}
-                      >
-                        <Icon
-                          className="holo-nav__icon"
-                          size={16}
-                          strokeWidth={1.7}
-                          aria-hidden="true"
-                        />
-                        <span>{item.label}</span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          aria-current={active ? 'page' : undefined}
+                          className={`holo-nav__link${active ? ' is-active' : ''}`}
+                        >
+                          <Icon
+                            className="holo-nav__icon"
+                            size={16}
+                            strokeWidth={1.7}
+                            aria-hidden="true"
+                          />
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )
+          })}
         </div>
       </nav>
     </aside>

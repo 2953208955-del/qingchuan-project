@@ -133,13 +133,18 @@ describe('ImageReplay', () => {
     expect(screen.getByText('帧 1/1')).toBeInTheDocument()
   })
 
-  it('shows 暂无巡检影像 without a run or without images', () => {
+  it('shows 暂无巡检影像 without a run or without images and keeps the non-live disclaimer', () => {
+    const badge = screen.queryByText('巡检影像回放 · 非实时')
+    expect(badge).toBeNull()
+
     const { unmount } = render(<ImageReplay run={null} />)
     expect(screen.getByText('暂无巡检影像')).toBeInTheDocument()
+    expect(screen.getByText('巡检影像回放 · 非实时')).toHaveClass('holo-badge--muted')
     unmount()
 
     render(<ImageReplay run={makeRun({ images: [], detections: [] })} />)
     expect(screen.getByText('暂无巡检影像')).toBeInTheDocument()
+    expect(screen.getByText('巡检影像回放 · 非实时')).toBeInTheDocument()
   })
 
   describe('auto advance', () => {
@@ -186,6 +191,60 @@ describe('ImageReplay', () => {
       fireEvent.focusOut(next)
       act(() => {
         vi.advanceTimersByTime(6000)
+      })
+      expect(screen.getByText('帧 2/2')).toBeInTheDocument()
+    })
+
+    it('stays paused until both hover and focus have left', () => {
+      vi.useFakeTimers()
+      render(<ImageReplay run={makeRun()} />)
+
+      const replay = document.querySelector('.replay') as HTMLElement
+      const stage = document.querySelector('.replay-stage') as HTMLElement
+      const next = screen.getByRole('button', { name: '下一帧' })
+      fireEvent.mouseEnter(replay)
+      fireEvent.focusIn(next)
+
+      // Leaving with the pointer must not unpause while focus is still inside.
+      fireEvent.mouseLeave(replay)
+      act(() => {
+        vi.advanceTimersByTime(6000)
+      })
+      expect(screen.getByText('帧 1/2')).toBeInTheDocument()
+
+      // Entering and leaving the stage exercises the pointer path separately.
+      fireEvent.mouseEnter(stage)
+      fireEvent.focusOut(next)
+      fireEvent.mouseLeave(stage)
+      act(() => {
+        vi.advanceTimersByTime(6000)
+      })
+      expect(screen.getByText('帧 2/2')).toBeInTheDocument()
+    })
+
+    it('restarts the six-second timer after manual previous/next navigation', () => {
+      vi.useFakeTimers()
+      render(<ImageReplay run={makeRun()} />)
+
+      act(() => {
+        vi.advanceTimersByTime(5000)
+      })
+      fireEvent.click(screen.getByRole('button', { name: '下一帧' }))
+      expect(screen.getByText('帧 2/2')).toBeInTheDocument()
+
+      // The new frame gets a full six seconds rather than the old frame's 1s.
+      act(() => {
+        vi.advanceTimersByTime(5999)
+      })
+      expect(screen.getByText('帧 2/2')).toBeInTheDocument()
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
+      expect(screen.getByText('帧 1/2')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: '上一帧' }))
+      act(() => {
+        vi.advanceTimersByTime(5999)
       })
       expect(screen.getByText('帧 2/2')).toBeInTheDocument()
     })

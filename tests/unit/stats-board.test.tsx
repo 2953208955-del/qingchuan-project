@@ -52,4 +52,11 @@ describe('StatsBoard', () => {
     expect(screen.getByText('80–100%')).toBeInTheDocument()
     expect(screen.getByText(/29 个/)).toBeInTheDocument()
   })
+
+  it('keeps KPI labels out of the accessibility tree so they are announced once', () => {
+    render(<StatsBoard stats={stats} />)
+    const visibleLabel = screen.getByText('累计识别', { selector: '.stats-kpi__label' })
+    expect(visibleLabel).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByText('累计识别：40')).toBeInTheDocument()
+  })
 })

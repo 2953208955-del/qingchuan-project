@@ -112,7 +112,7 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   }))
 
   await page.goto('/inspect')
-  await page.getByLabel('巡检指令').fill('检查塑料垃圾')
+  await page.getByRole('textbox', { name: '巡检指令' }).fill('检查塑料垃圾')
   await page.setInputFiles('input[type=file]', {
     name: 'a.png',
     mimeType: 'image/png',
@@ -130,4 +130,13 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
 
   await expect(page.getByText('运行状态：')).toContainText('分析完成')
   await expect(page.getByRole('link', { name: '查看报告' })).toHaveAttribute('href', '/reports/run-1')
+
+  // A finished run must offer a reset without a page reload. The store and the
+  // page-level start/finish flags all clear, restoring the task/plan panels.
+  await page.getByRole('button', { name: '新一轮巡检' }).click()
+  await expect(page.getByRole('button', { name: '生成计划' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '巡检指令' })).toHaveValue('')
+  await expect(page.getByText('已选 0/20 张')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Agent 执行时间线' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '新一轮巡检' })).toHaveCount(0)
 })

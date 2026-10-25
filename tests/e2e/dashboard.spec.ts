@@ -14,6 +14,7 @@ test('home renders the live-data holographic command screen', async ({ page }) =
   await expect(dialog.getByRole('link', { name: '查看完整报告' })).toHaveAttribute('href', '/reports/e2e-run-1')
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
+  await expect(points.first()).toBeFocused()
 
   await expect(page.locator('[data-kpi="detections"]')).toContainText('2')
   await expect(page.locator('[data-kpi="pending"]')).toContainText('1')

@@ -16,8 +16,11 @@ const LINE_WIDTH = 260
 const LINE_HEIGHT = 92
 const LINE_TOP = 10
 const LINE_BOTTOM = 78
-const LINE_LEFT = 10
-const LINE_RIGHT = 250
+// Five equal bins sit below the chart at 10%, 30%, 50%, 70% and 90% of its
+// width; matching the SVG's plotted x range keeps each bin label under its
+// point instead of drifting to the plot edges.
+const LINE_LEFT = LINE_WIDTH * 0.1
+const LINE_RIGHT = LINE_WIDTH * 0.9
 
 function sliceColor(key: string, index: number): string {
   if (key === 'rest') return REST_COLOR
@@ -116,7 +119,12 @@ export function StatsBoard({ stats }: { stats: DashboardStats }) {
       <div className="stats-kpis">
         {kpis.map(kpi => (
           <div key={kpi.key} className="stats-kpi" data-kpi={kpi.key}>
-            <span className="stats-kpi__label">{kpi.label}</span>
+            {/* HoloCountUp already exposes the final label/value to assistive
+                tech; keep the visible label out of the accessibility tree so
+                KPI labels are not announced twice. */}
+            <span className="stats-kpi__label" aria-hidden="true">
+              {kpi.label}
+            </span>
             <HoloCountUp
               value={kpi.value}
               label={kpi.label}

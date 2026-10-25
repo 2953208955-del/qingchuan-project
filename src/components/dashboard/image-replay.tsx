@@ -12,9 +12,11 @@ export function ImageReplay({ run }: { run: DashboardRun | null }) {
   const images = run?.images ?? []
   const total = images.length
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
 
   const activeIndex = total === 0 ? 0 : Math.min(index, total - 1)
+  const paused = hovered || focused
 
   useEffect(() => {
     if (total <= 1 || paused) return undefined
@@ -23,16 +25,19 @@ export function ImageReplay({ run }: { run: DashboardRun | null }) {
     // viewer to step through frames with the controls.
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
 
-    const timer = window.setInterval(() => {
+    // A timeout keyed to the active frame restarts the full six seconds after a
+    // manual step instead of inheriting the previous frame's elapsed time.
+    const timer = window.setTimeout(() => {
       setIndex(current => (current + 1) % total)
     }, AUTO_ADVANCE_MS)
-    return () => window.clearInterval(timer)
-  }, [paused, total])
+    return () => window.clearTimeout(timer)
+  }, [activeIndex, paused, total])
 
   if (!run || total === 0) {
     return (
       <HoloPanel className="replay">
         <div className="replay-empty">
+          <HoloBadge tone="muted">巡检影像回放 · 非实时</HoloBadge>
           <p>暂无巡检影像</p>
           <span>任务分析完成后将在此回放影像与识别框。</span>
         </div>
@@ -55,13 +60,16 @@ export function ImageReplay({ run }: { run: DashboardRun | null }) {
     <HoloPanel className="replay">
       <div
         className="replay"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onFocus={() => setPaused(true)}
-        onBlur={() => setPaused(false)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={event => {
+          const next = event.relatedTarget as Node | null
+          if (!next || !event.currentTarget.contains(next)) setFocused(false)
+        }}
       >
         <div className="replay__head">
-          <HoloBadge tone="magenta">巡检影像回放 · 非实时</HoloBadge>
+          <HoloBadge tone="muted">巡检影像回放 · 非实时</HoloBadge>
           <span className="replay__count" aria-live="polite">
             帧 {activeIndex + 1}/{total}
           </span>

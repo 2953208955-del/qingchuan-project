@@ -33,6 +33,16 @@ describe('SiteNav', () => {
     render(<SiteNav />)
     expect(screen.getByRole('link', { name: '报告库' })).toHaveAttribute('aria-current', 'page')
   })
+
+  it('exposes one named navigation landmark with named groups', () => {
+    render(<SiteNav />)
+    expect(screen.getAllByRole('navigation')).toHaveLength(1)
+    expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: '导航' })).not.toBeInTheDocument()
+    expect(screen.getByRole('list', { name: '总览' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: '巡检作业' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: '知识中枢' })).toBeInTheDocument()
+  })
 })
 
 describe('AppShell', () => {
