@@ -1,5 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { HoloBadge } from '@/components/holo/holo-badge'
+import { HoloPanel } from '@/components/holo/holo-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,58 +68,93 @@ function loadResults(): Results {
   }
 }
 
+function Metric({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <div className="eval-metric">
+      <span className="eval-metric__label">{label}</span>
+      <span className="eval-metric__value">
+        {value}
+        {unit && <span className="eval-metric__unit">{unit}</span>}
+      </span>
+    </div>
+  )
+}
+
 export default function EvalPage() {
   const results = loadResults()
   const hasResults = results.detection !== null || results.rag !== null || results.agent !== null
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-semibold">评测</h1>
+    <div className="eval-page">
+      <header className="eval-hero">
+        <p className="holo-eyebrow">QINGCHUAN · EVALUATION</p>
+        <h1>评测</h1>
+      </header>
 
       {results.generatedAt && (
-        <p className="text-xs text-muted-foreground">生成时间：{results.generatedAt}</p>
+        <p className="eval-generated">
+          生成时间：<time dateTime={results.generatedAt}>{results.generatedAt}</time>
+        </p>
       )}
 
       {!hasResults && (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">尚未运行评测。运行以下命令生成 data/eval/results.json：</p>
-          <ul className="space-y-1 rounded-lg border border-border p-3 font-mono text-xs">
-            {COMMANDS.map(command => <li key={command}>{command}</li>)}
-          </ul>
-        </div>
+        <HoloPanel className="eval-empty-panel">
+          <div className="eval-empty">
+            <p>尚未运行评测。运行以下命令生成 data/eval/results.json：</p>
+            <ul className="eval-commands">
+              {COMMANDS.map(command => <li key={command}>{command}</li>)}
+            </ul>
+          </div>
+        </HoloPanel>
       )}
 
-      {results.detection && (
-        <section className="rounded-lg border border-border p-3">
-          <h2 className="text-sm font-medium">检测（GT 匹配，IoU ≥ 0.5）</h2>
-          {results.detection.mode === 'dry-run' && (
-            <p role="alert" className="mt-2 rounded bg-destructive/10 p-2 text-xs text-destructive">
-              dry-run，仅验证评测管线，不作为效果证据
-            </p>
+      {hasResults && (
+        <div className="eval-grid">
+          {results.detection && (
+            <HoloPanel
+              title="检测（GT 匹配，IoU ≥ 0.5）"
+              subtitle={`${results.detection.images} 张`}
+              actions={
+                <HoloBadge tone={results.detection.mode === 'dry-run' ? 'gold' : 'cyan'}>
+                  {results.detection.mode}
+                </HoloBadge>
+              }
+              className="eval-panel eval-panel--detection"
+            >
+              {results.detection.mode === 'dry-run' && (
+                <p role="alert" className="eval-dry-run">
+                  dry-run，仅验证评测管线，不作为效果证据
+                </p>
+              )}
+              <div className="eval-metrics">
+                <Metric label="P" value={results.detection.precision.toFixed(3)} />
+                <Metric label="R" value={results.detection.recall.toFixed(3)} />
+                <Metric label="F1" value={results.detection.f1.toFixed(3)} />
+              </div>
+            </HoloPanel>
           )}
-          <p className="mt-1 text-xs text-muted-foreground">
-            P {results.detection.precision.toFixed(3)} · R {results.detection.recall.toFixed(3)} ·
-            F1 {results.detection.f1.toFixed(3)} · {results.detection.images} 张 · {results.detection.mode}
-          </p>
-        </section>
-      )}
 
-      {results.rag && (
-        <section className="rounded-lg border border-border p-3">
-          <h2 className="text-sm font-medium">RAG</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Recall@5 {results.rag.recallAt5.toFixed(3)} · {results.rag.total} 题
-          </p>
-        </section>
-      )}
+          {results.rag && (
+            <HoloPanel
+              title="RAG"
+              subtitle={`${results.rag.total} 题`}
+              className="eval-panel"
+            >
+              <div className="eval-metrics">
+                <Metric label="Recall@5" value={results.rag.recallAt5.toFixed(3)} />
+              </div>
+            </HoloPanel>
+          )}
 
-      {results.agent && (
-        <section className="rounded-lg border border-border p-3">
-          <h2 className="text-sm font-medium">Agent</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            成功率 {results.agent.successRate.toFixed(3)} · 平均 {Math.round(results.agent.avgLatencyMs)}ms
-          </p>
-        </section>
+          {results.agent && (
+            <HoloPanel title="Agent" className="eval-panel">
+              <div className="eval-metrics">
+                <Metric label="成功率" value={results.agent.successRate.toFixed(3)} />
+                <Metric label="平均延迟" value={String(Math.round(results.agent.avgLatencyMs))} unit="ms" />
+              </div>
+            </HoloPanel>
+          )}
+        </div>
       )}
     </div>
   )

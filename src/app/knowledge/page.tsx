@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Clause } from '@/lib/domain/schemas'
+import { HoloBadge } from '@/components/holo/holo-badge'
 
 type SearchResponse = { clauses?: unknown; noEvidence?: unknown }
 
@@ -52,52 +53,63 @@ export default function KnowledgePage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-semibold">知识库</h1>
-      <form onSubmit={search} className="flex gap-2">
+    <div className="knowledge-page">
+      <header className="knowledge-hero">
+        <p className="holo-eyebrow">QINGCHUAN · KNOWLEDGE BASE</p>
+        <h1>知识库</h1>
+      </header>
+
+      <form onSubmit={search} className="knowledge-search" role="search">
+        <span className="knowledge-search__prompt" aria-hidden>›</span>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="例如：严重度如何分级"
           aria-label="检索问题"
-          className="flex-1 rounded-lg border border-border bg-background p-2 text-sm"
+          className="holo-input knowledge-search__input"
         />
         <button
           type="submit"
           disabled={searching || !query.trim()}
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
+          className="holo-btn holo-btn--primary knowledge-search__submit"
         >
           {searching ? '检索中…' : '检索'}
         </button>
       </form>
 
       {searching && (
-        <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+        <p role="status" aria-live="polite" className="knowledge-status knowledge-status--searching">
           正在检索标准条款…
         </p>
       )}
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="knowledge-alert">
           {error}
         </p>
       )}
       {searched && noEvidence && (
-        <p role="status" className="text-sm text-destructive">
+        <p role="status" className="knowledge-status knowledge-status--empty">
           知识库中未找到依据。
         </p>
       )}
 
-      {clauses.map(c => (
-        <article key={c.id} className="rounded-lg border border-border p-3 text-sm">
-          <div className="flex justify-between gap-3">
-            <h2 className="text-xs font-medium">{c.standardNo} {c.clauseNo} · {c.title}</h2>
-            {typeof c.score === 'number' && (
-              <span className="shrink-0 text-xs text-muted-foreground">得分 {c.score.toFixed(3)}</span>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{c.content}</p>
-        </article>
-      ))}
+      {clauses.length > 0 && (
+        <section className="knowledge-results" aria-label="标准条款检索结果">
+          {clauses.map(c => (
+            <article key={c.id} className="knowledge-clause">
+              <div className="knowledge-clause__head">
+                <h2 className="knowledge-clause__title">{c.standardNo} {c.clauseNo} · {c.title}</h2>
+                {typeof c.score === 'number' && (
+                  <HoloBadge tone="muted" className="knowledge-clause__score">
+                    得分 {c.score.toFixed(3)}
+                  </HoloBadge>
+                )}
+              </div>
+              <p className="knowledge-clause__body">{c.content}</p>
+            </article>
+          ))}
+        </section>
+      )}
     </div>
   )
 }
