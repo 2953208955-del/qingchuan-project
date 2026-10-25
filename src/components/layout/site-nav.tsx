@@ -1,31 +1,91 @@
-import Link from 'next/link'
+'use client'
 
-const links = [
-  { href: '/inspect', label: '巡检工作台' },
-  { href: '/reports', label: '报告库' },
-  { href: '/knowledge', label: '知识库' },
-  { href: '/eval', label: '评测' },
-]
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  Activity,
+  BookOpen,
+  FileText,
+  LayoutDashboard,
+  ScanLine,
+} from 'lucide-react'
+
+const NAV_GROUPS = [
+  {
+    label: '总览',
+    items: [{ href: '/', label: '总览大屏', icon: LayoutDashboard }],
+  },
+  {
+    label: '巡检作业',
+    items: [
+      { href: '/inspect', label: '巡检工作台', icon: ScanLine },
+      { href: '/reports', label: '报告库', icon: FileText },
+    ],
+  },
+  {
+    label: '知识中枢',
+    items: [
+      { href: '/knowledge', label: '知识库', icon: BookOpen },
+      { href: '/eval', label: '评测中心', icon: Activity },
+    ],
+  },
+] as const
+
+function isActiveRoute(pathname: string, href: string) {
+  if (href === '/') return pathname === '/'
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
 
 export function SiteNav() {
+  const pathname = usePathname() ?? '/'
+
   return (
-    <header className="border-b border-border bg-background/80 backdrop-blur print:hidden">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
-        <Link href="/" className="font-semibold tracking-tight">
-          清川
-        </Link>
-        <nav aria-label="主导航" className="flex items-center gap-4 text-sm">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {link.label}
-            </Link>
+    <aside className="holo-nav print:hidden" aria-label="导航">
+      <Link href="/" className="holo-nav__brand" aria-label="清川">
+        <span className="holo-nav__brand-mark" aria-hidden="true">
+          川
+        </span>
+        <span className="holo-nav__brand-text">
+          <span className="holo-nav__brand-name">清川</span>
+          <span className="holo-nav__brand-latin" aria-hidden="true">
+            QINGCHUAN
+          </span>
+        </span>
+      </Link>
+
+      <nav className="holo-nav__nav" aria-label="主导航">
+        <div className="holo-nav__groups">
+          {NAV_GROUPS.map((group) => (
+            <section className="holo-nav__group" key={group.label}>
+              <p className="holo-nav__group-label">{group.label}</p>
+              <ul className="holo-nav__list">
+                {group.items.map((item) => {
+                  const active = isActiveRoute(pathname, item.href)
+                  const Icon = item.icon
+
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        className={`holo-nav__link${active ? ' is-active' : ''}`}
+                      >
+                        <Icon
+                          className="holo-nav__icon"
+                          size={16}
+                          strokeWidth={1.7}
+                          aria-hidden="true"
+                        />
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
           ))}
-        </nav>
-      </div>
-    </header>
+        </div>
+      </nav>
+    </aside>
   )
 }

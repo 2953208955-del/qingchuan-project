@@ -1,10 +1,16 @@
-import { SiteNav } from './site-nav'
+import { HoloBackdrop } from '@/components/holo/holo-backdrop'
+import { HoloTopBar } from '@/components/layout/holo-topbar'
+import { SiteNav } from '@/components/layout/site-nav'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen">
+    <div className="holo-app">
+      <HoloBackdrop />
       <SiteNav />
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+      <div className="holo-app__content">
+        <HoloTopBar />
+        <main className="holo-page">{children}</main>
+      </div>
     </div>
   )
 }
