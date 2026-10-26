@@ -30,9 +30,9 @@ describe('knowledge corpus', () => {
   it('has exact per-document counts and external source notes', () => {
     const expectedCounts: Record<string, number> = {
       'seed-sop.md': 6,
-      'cjjt174-2013.md': 15,
-      'db31-t1639-2025.md': 10,
-      'gbt19095-2019.md': 8,
+      'cjjt174-2013.md': 23,
+      'db31-t1639-2025.md': 18,
+      'gbt19095-2019.md': 14,
     }
 
     let total = 0
@@ -64,6 +64,6 @@ describe('knowledge corpus', () => {
       }
     }
 
-    expect(total).toBe(39)
+    expect(total).toBe(61)
   })
 })

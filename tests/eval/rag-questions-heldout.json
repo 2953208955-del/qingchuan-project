@@ -1,0 +1,37 @@
+[
+  { "question": "制定水域保洁计划时应该考虑哪些因素？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-5.1-作业计划" },
+  { "question": "清捞上来的垃圾可以堆在桥涵下面吗？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-5.2-垃圾转运" },
+  { "question": "堤岸清扫结束后垃圾应该怎么处理？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-5.3-堤岸清运" },
+  { "question": "保洁船设备出现异常应该怎么办？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-5-设备检查" },
+  { "question": "应急保洁记录需要写哪些内容？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-5.5-应急记录" },
+  { "question": "水面质量检查要记录哪些信息？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-6.1-水面检查" },
+  { "question": "堤岸质量检查覆盖哪些部位？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-6.2-堤岸检查" },
+  { "question": "质量评价不达标时应该怎么整改？", "expectedStandardNo": "CJJ/T 174-2013", "expectedClause": "摘编-CJJ-7.2-评价整改" },
+
+  { "question": "河湖巡查计划应该明确哪些内容？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-5.1-巡查计划" },
+  { "question": "水生植物过度繁殖时巡查要注意什么？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-5.3-水生生物" },
+  { "question": "堤防护岸巡查要关注哪些隐患？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-5.4-河湖床与堤防" },
+  { "question": "陆域环境巡查主要看什么？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-5.5-陆域环境" },
+  { "question": "防汛通道被占用时应该怎么处理？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-5.6-防汛通道" },
+  { "question": "监测发现水质异常后应该做什么？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-6-异常监测" },
+  { "question": "维修养护计划应该优先处理哪些问题？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-7.1-维修养护" },
+  { "question": "堤防护岸出现裂缝时怎么养护？", "expectedStandardNo": "DB31/T 1639-2025", "expectedClause": "摘编-DB31-7.4-堤防护岸" },
+
+  { "question": "大类图形符号有什么作用？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-4-大类图形符号" },
+  { "question": "大类标志由哪些内容组成？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-5-大类标志设计" },
+  { "question": "小类标志是用来做什么的？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-7-小类标志设计" },
+  { "question": "室外分类标志的材料有什么要求？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-8.2-尺寸材料" },
+  { "question": "分类标志破损或褪色后怎么办？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-8.3-维护" },
+  { "question": "分类标志应该设置在什么位置？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "摘编-GB/T-8.1-设置位置" },
+
+  { "question": "CJJ/T 174-2013 规定一级水域每天打捞几次？", "expectNoEvidence": true },
+  { "question": "DB31/T 1639-2025 规定塑料瓶属于哪类生活垃圾？", "expectNoEvidence": true },
+  { "question": "GB/T 19095-2019 规定河湖保洁频次是多少？", "expectNoEvidence": true },
+  { "question": "清川SOP 规定一级水域每5000平方米垃圾上限是多少？", "expectNoEvidence": true },
+  { "question": "河湖养护可以使用化学除草剂吗？", "expectNoEvidence": true },
+  { "question": "一级堤岸每200米动物尸体允许几处？", "expectNoEvidence": true },
+  { "question": "河湖巡查必须使用无人机吗？", "expectNoEvidence": true },
+  { "question": "水质监测的溶解氧限值是多少？", "expectNoEvidence": true },
+  { "question": "垃圾转运车每天必须清洗几次？", "expectNoEvidence": true },
+  { "question": "分类标志的尺寸必须是600毫米乘400毫米吗？", "expectNoEvidence": true }
+]

@@ -29,7 +29,7 @@ describe('inspection store', () => {
     const s = useInspectionStore.getState()
     s.setPlan({
       imageCount: 3, focusCategories: [], intentSummary: '检查河岸垃圾',
-      steps: [], tools: [], parsedBy: 'heuristic', estimatedSeconds: 20, estimatedCostCny: 0.2,
+      steps: [], tools: [], planningTrace: [], parsedBy: 'heuristic', estimatedSeconds: 20, estimatedCostCny: 0.2,
       output: 'inspection_report',
     })
     s.setSelectedDetection('d1')
@@ -75,7 +75,7 @@ describe('inspection store', () => {
     s.setImages([image('a')])
     s.setPlan({
       imageCount: 1, focusCategories: [], intentSummary: '检查河岸垃圾',
-      steps: [], tools: [], parsedBy: 'heuristic', estimatedSeconds: 5, estimatedCostCny: 0.02,
+      steps: [], tools: [], planningTrace: [], parsedBy: 'heuristic', estimatedSeconds: 5, estimatedCostCny: 0.02,
       output: 'inspection_report',
     })
     s.addStep(step())

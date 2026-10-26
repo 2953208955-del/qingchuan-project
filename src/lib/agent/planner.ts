@@ -1,9 +1,20 @@
 import { z } from 'zod'
+import { generateText, stepCountIs, tool } from 'ai'
 import { DebrisCategory, OptionalTool } from '@/lib/domain/schemas'
 import { BudgetExceededError, BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
-import { generateJson, JsonParseError, JsonSchemaError, type TokenUsage } from '@/lib/ai/generate-json'
+import {
+  extractJson,
+  generateJson,
+  JsonParseError,
+  JsonSchemaError,
+  type TokenUsage,
+} from '@/lib/ai/generate-json'
 import { getTextModel, getTextModelId } from '@/lib/ai/providers'
-import { PLANNER_PROMPT } from '@/lib/ai/prompts'
+import { PLANNER_PROMPT, PLANNER_TOOL_PROMPT } from '@/lib/ai/prompts'
+import type { Db } from '@/lib/db/client'
+import type { Embedder } from '@/lib/rag/embed'
+import type { Reranker } from '@/lib/rag/rerank'
+import { retrieveClauses } from '@/lib/rag/retrieve'
 
 type Category = z.infer<typeof DebrisCategory>
 
@@ -22,10 +33,18 @@ export interface PlannerPort {
   parse(input: { instruction: string; imageCount: number }): Promise<PlanIntent>
 }
 
+export interface PlannerToolTrace {
+  tool: string
+  input: unknown
+  output: unknown
+  latencyMs: number
+}
+
 export interface PlanIntent {
   intentSummary: string
   focusCategories: Category[]
   tools: OptionalTool[]
+  planningTrace: PlannerToolTrace[]
 }
 
 const SUMMARY_MAX = 80
@@ -162,6 +181,7 @@ export function parseInstructionHeuristic(instruction: string): PlanIntent {
     // instruction mentions the categories.
     focusCategories: DebrisCategory.options.filter(category => selected.has(category)),
     tools: selectTools(instruction),
+    planningTrace: [],
   }
 }
 
@@ -172,6 +192,7 @@ export function parseInstructionHeuristic(instruction: string): PlanIntent {
 export function normalizePlanIntent(
   instruction: string,
   raw: { intentSummary: string; focusCategories: Category[]; tools?: OptionalTool[] },
+  planningTrace: PlannerToolTrace[] = [],
 ): PlanIntent {
   const focusCategories = [...new Set(raw.focusCategories)].filter(category => {
     const specific = keywordMentions(instruction, category)
@@ -191,6 +212,7 @@ export function normalizePlanIntent(
     intentSummary: raw.intentSummary.trim().slice(0, SUMMARY_MAX) || summaryFor(instruction),
     focusCategories,
     tools,
+    planningTrace,
   }
 }
 
@@ -264,6 +286,146 @@ export class DeepSeekInspectionPlanner implements PlannerPort {
     } catch (error) {
       // A provider response that failed parsing was billed anyway; persist it
       // before the caller decides to fall back to the heuristic parser.
+      if (!charged && isStructuredOutputError(error) && error.usage) this.charge(error.usage)
+      throw error
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
+  }
+}
+
+export interface PlanningSearchDeps {
+  db: Db
+  embedder: Embedder
+  reranker?: Reranker
+}
+
+/**
+ * Read-only search exposed as a planner tool. Kept as a plain function so the
+ * tool's behaviour can be tested without driving the model loop.
+ */
+export async function searchStandardsForPlanning(
+  deps: PlanningSearchDeps,
+  input: { query: string; categories?: Category[] },
+) {
+  const result = await retrieveClauses(deps, input.query, input.categories ?? [], 5)
+  return {
+    noEvidence: result.noEvidence,
+    clauses: result.clauses.map(clause => ({
+      standardNo: clause.standardNo,
+      clauseNo: clause.clauseNo,
+      title: clause.title,
+      score: clause.score,
+    })),
+  }
+}
+
+// Tool calling adds a real retrieval round-trip before the model writes the
+// final plan; 45s was too tight on this deployment (observed ~50-60s total).
+const DEFAULT_TOOL_PLANNER_TIMEOUT_MS = 90_000
+
+/**
+ * Planner with a real Function Calling loop. The model can search the
+ * knowledge base before deciding the plan; every tool call is captured in
+ * `planningTrace` and persisted with the plan. It never writes metrics or
+ * filters detections.
+ */
+export class DeepSeekPlanningAgent implements PlannerPort {
+  constructor(private readonly opts: {
+    db: Db
+    embedder: Embedder
+    reranker?: Reranker
+    budget?: BudgetTracker
+    timeoutMs?: number
+  }) {}
+
+  private charge(usage: TokenUsage): void {
+    this.opts.budget?.add(estimateCostCny(getTextModelId(), usage))
+  }
+
+  async parse(input: { instruction: string; imageCount: number }): Promise<PlanIntent> {
+    if (this.opts.budget && this.opts.budget.remaining <= 0) {
+      throw new BudgetExceededError()
+    }
+
+    const trace: PlannerToolTrace[] = []
+    const searchTool = tool({
+      description: '检索已入库的河湖标准条款，用于判断巡检指令是否有依据',
+      inputSchema: z.object({
+        query: z.string().min(1),
+        categories: z.array(DebrisCategory).max(10).default([]),
+      }),
+      execute: async (args) => {
+        const started = Date.now()
+        try {
+          const output = await searchStandardsForPlanning({
+            db: this.opts.db,
+            embedder: this.opts.embedder,
+            reranker: this.opts.reranker,
+          }, args)
+          trace.push({
+            tool: 'search_standards',
+            input: args,
+            output,
+            latencyMs: Math.max(0, Date.now() - started),
+          })
+          return output
+        } catch (error) {
+          const output = { error: error instanceof Error ? error.message : String(error) }
+          trace.push({
+            tool: 'search_standards',
+            input: args,
+            output,
+            latencyMs: Math.max(0, Date.now() - started),
+          })
+          return output
+        }
+      },
+    })
+
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort()
+        reject(new Error('任务解析超时'))
+      }, this.opts.timeoutMs ?? DEFAULT_TOOL_PLANNER_TIMEOUT_MS)
+    })
+
+    let charged = false
+    try {
+      const result = await Promise.race([
+        generateText({
+          model: getTextModel(),
+          system: PLANNER_TOOL_PROMPT,
+          prompt: JSON.stringify(input),
+          tools: { search_standards: searchTool },
+          stopWhen: stepCountIs(4),
+          temperature: 0.1,
+          abortSignal: controller.signal,
+        }),
+        timeout,
+      ])
+      const usage: TokenUsage = {
+        inputTokens: result.usage.inputTokens ?? 0,
+        outputTokens: result.usage.outputTokens ?? 0,
+      }
+      this.charge(usage)
+      charged = true
+
+      let extracted: unknown
+      try {
+        extracted = extractJson(result.text)
+      } catch (error) {
+        if (error instanceof JsonParseError) throw new JsonParseError(error.raw, usage)
+        throw error
+      }
+      const parsed = PlannerModelOutput.safeParse(extracted)
+      if (!parsed.success) {
+        throw new JsonSchemaError(result.text, usage)
+      }
+      return normalizePlanIntent(input.instruction, parsed.data, trace)
+    } catch (error) {
       if (!charged && isStructuredOutputError(error) && error.usage) this.charge(error.usage)
       throw error
     } finally {

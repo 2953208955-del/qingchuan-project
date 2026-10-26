@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db/client'
 import { getRun } from '@/lib/db/repo'
 import { createPlanForRun } from '@/lib/agent/plan'
-import { DeepSeekInspectionPlanner } from '@/lib/agent/planner'
+import { DeepSeekInspectionPlanner, DeepSeekPlanningAgent } from '@/lib/agent/planner'
 import { BudgetTracker, dailyBudgetFromEnv, runBudgetFromEnv } from '@/lib/ai/budget'
+import { DashScopeEmbedder } from '@/lib/rag/embed'
+import { DashScopeReranker } from '@/lib/rag/rerank'
 import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120
 
 // Planning can make one paid text-model call; keep it on its own allowance.
 const planLimiter = new RateLimiter(RATE_LIMITS.plan.limit, RATE_LIMITS.plan.windowMs)
@@ -30,9 +32,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Seed with the run's persisted spend so a plan call counts against the same
   // per-run cap that the later analysis uses.
   const budget = new BudgetTracker(runBudgetFromEnv(), run.totalCostCny)
-  const planner = process.env.DEEPSEEK_API_KEY?.trim()
-    ? new DeepSeekInspectionPlanner({ budget })
-    : undefined
+  const deepseekKey = process.env.DEEPSEEK_API_KEY?.trim() ?? ''
+  const dashscopeKey = process.env.DASHSCOPE_API_KEY?.trim() ?? ''
+  const planner = !deepseekKey
+    ? undefined
+    : dashscopeKey
+      ? new DeepSeekPlanningAgent({
+          db,
+          budget,
+          embedder: new DashScopeEmbedder(dashscopeKey),
+          reranker: new DashScopeReranker(dashscopeKey),
+        })
+      : new DeepSeekInspectionPlanner({ budget })
 
   const outcome = await createPlanForRun(db, id, {
     planner,

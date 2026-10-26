@@ -14,13 +14,20 @@ type Results = {
   sectionUpdatedAt: Record<string, string>
   detection: DetectionResults | null
   rag: RagResults | null
+  ragHeldout: RagResults | null
   agent: AgentResults | null
 }
 
-const COMMANDS = ['npm run eval:detection', 'npm run eval:rag', 'npm run eval:agent']
+const COMMANDS = [
+  'npm run eval:detection',
+  'npm run eval:rag',
+  'npm run eval:rag:heldout',
+  'npm run eval:agent',
+]
 
 const isEmpty: Results = {
-  generatedAt: null, sectionUpdatedAt: {}, detection: null, rag: null, agent: null,
+  generatedAt: null, sectionUpdatedAt: {}, detection: null,
+  rag: null, ragHeldout: null, agent: null,
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -67,6 +74,7 @@ function loadResults(): Results {
       sectionUpdatedAt,
       detection: parseDetection(raw.detection),
       rag: parseRagResults(raw.rag),
+      ragHeldout: parseRagResults(raw.ragHeldout),
       agent: parseAgent(raw.agent),
     }
   } catch {
@@ -97,7 +105,8 @@ function Metric({ label, value, unit }: { label: string; value: string; unit?: s
 
 export default function EvalPage() {
   const results = loadResults()
-  const hasResults = results.detection !== null || results.rag !== null || results.agent !== null
+  const hasResults = results.detection !== null || results.rag !== null
+    || results.ragHeldout !== null || results.agent !== null
 
   return (
     <div className="eval-page">
@@ -175,6 +184,31 @@ export default function EvalPage() {
                 <Metric
                   label="无答案准确率"
                   value={(results.rag.noAnswerAccuracy * 100).toFixed(1)}
+                  unit="%"
+                />
+              </div>
+            </HoloPanel>
+          )}
+
+          {results.ragHeldout && (
+            <HoloPanel
+              title="RAG · held-out"
+              subtitle={
+                results.ragHeldout.answerableTotal > 0
+                  ? `${results.ragHeldout.total} 题 · 可答 ${results.ragHeldout.answerableTotal} / 无答案 ${results.ragHeldout.noAnswerTotal}`
+                  : `${results.ragHeldout.total} 题`
+              }
+              className="eval-panel"
+            >
+              <UpdatedAt value={results.sectionUpdatedAt.ragHeldout} />
+              <p className="eval-generated">未参与阈值调参；仅运行一次。</p>
+              <div className="eval-metrics">
+                <Metric label="Recall@5" value={results.ragHeldout.recallAt5.toFixed(3)} />
+                <Metric label="Recall@3" value={results.ragHeldout.recallAt3.toFixed(3)} />
+                <Metric label="MRR" value={results.ragHeldout.mrr.toFixed(3)} />
+                <Metric
+                  label="无答案准确率"
+                  value={(results.ragHeldout.noAnswerAccuracy * 100).toFixed(1)}
                   unit="%"
                 />
               </div>

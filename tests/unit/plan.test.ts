@@ -32,8 +32,9 @@ function planIntent(
   focusCategories: PlanIntent['focusCategories'],
   intentSummary = '重点检查塑料类',
   tools: PlanIntent['tools'] = [],
+  planningTrace: PlanIntent['planningTrace'] = [],
 ): PlanIntent {
-  return { intentSummary, focusCategories, tools }
+  return { intentSummary, focusCategories, tools, planningTrace }
 }
 
 function planner(overrides: Partial<PlannerPort> = {}): PlannerPort & { parse: ReturnType<typeof vi.fn> } {
@@ -111,13 +112,20 @@ describe('createPlanForRun', () => {
     expect(repo.getRun(db, runId)?.totalCostCny).toBeCloseTo(0.01)
   })
 
-  it('persists optional tools and the full plan JSON on the run', async () => {
+  it('persists optional tools, planning trace and the full plan JSON on the run', async () => {
     const { db, runId } = setup()
+    const trace = [{
+      tool: 'search_standards',
+      input: { query: '塑料垃圾' },
+      output: { noEvidence: false, clauses: [] },
+      latencyMs: 12,
+    }]
     const parse = planner({
       parse: vi.fn(async () => planIntent(
         ['plastic_bottle'],
         '生成整改工单',
         ['create_work_order'],
+        trace,
       )),
     })
 
@@ -126,8 +134,13 @@ describe('createPlanForRun', () => {
     expect(outcome.ok).toBe(true)
     if (!outcome.ok) return
     expect(outcome.plan.tools).toEqual(['create_work_order'])
-    const stored = JSON.parse(repo.getRun(db, runId)?.planJson ?? '{}') as { tools?: string[] }
+    expect(outcome.plan.planningTrace).toEqual(trace)
+    const stored = JSON.parse(repo.getRun(db, runId)?.planJson ?? '{}') as {
+      tools?: string[]
+      planningTrace?: unknown[]
+    }
     expect(stored.tools).toEqual(['create_work_order'])
+    expect(stored.planningTrace).toEqual(trace)
   })
 
   it('falls back to keyword parsing when the planner fails', async () => {

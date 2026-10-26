@@ -170,6 +170,7 @@ describe('DeepSeekInspectionPlanner', () => {
       intentSummary: '统计塑料类',
       focusCategories: ['plastic_bottle'],
       tools: [],
+      planningTrace: [],
     })
     expect(budget.spent).toBeGreaterThan(0)
   })

@@ -3679,6 +3679,18 @@
     letter-spacing: 0.03em;
   }
 
+  .plan-confirm__trace ul {
+    margin: 2px 0 0;
+    padding-left: 16px;
+    color: var(--holo-muted);
+    font-size: 10.5px;
+    line-height: 1.6;
+  }
+
+  .plan-confirm__trace li::marker {
+    color: var(--holo-cyan);
+  }
+
   .plan-confirm__hint {
     margin: 0;
     color: var(--holo-muted);

@@ -33,6 +33,7 @@ describe('domain schemas', () => {
     expect(plan.intentSummary).toBe('')
     expect(plan.steps).toEqual([])
     expect(plan.tools).toEqual([])
+    expect(plan.planningTrace).toEqual([])
     expect(plan.parsedBy).toBe('heuristic')
   })
 

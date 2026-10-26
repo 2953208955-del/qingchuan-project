@@ -104,12 +104,21 @@ export const OPTIONAL_TOOL_LABELS: Record<OptionalTool, string> = {
   create_work_order: '整改工单',
 }
 
+export const PlanningTrace = z.object({
+  tool: z.string(),
+  input: z.unknown(),
+  output: z.unknown(),
+  latencyMs: z.number().nonnegative(),
+})
+export type PlanningTrace = z.infer<typeof PlanningTrace>
+
 export const Plan = z.object({
   imageCount: z.number().int().positive(),
   focusCategories: z.array(DebrisCategory).default([]),
   intentSummary: z.string().default(''),
   steps: z.array(PlanStep).default([]),
   tools: z.array(OptionalTool).default([]),
+  planningTrace: z.array(PlanningTrace).default([]),
   parsedBy: z.enum(['llm', 'heuristic']).default('heuristic'),
   estimatedSeconds: z.number().positive(),
   estimatedCostCny: z.number().nonnegative(),
