@@ -91,6 +91,10 @@ export function SiteNav() {
           })}
         </div>
       </nav>
+
+      <div className="holo-nav__footer">
+        <Link href="/privacy" className="holo-nav__privacy">隐私与数据</Link>
+      </div>
     </aside>
   )
 }

@@ -23,6 +23,7 @@ describe('SiteNav', () => {
     expect(screen.getByRole('link', { name: '报告库' })).toHaveAttribute('href', '/reports')
     expect(screen.getByRole('link', { name: '知识库' })).toHaveAttribute('href', '/knowledge')
     expect(screen.getByRole('link', { name: '评测中心' })).toHaveAttribute('href', '/eval')
+    expect(screen.getByRole('link', { name: '隐私与数据' })).toHaveAttribute('href', '/privacy')
     expect(screen.getByRole('link', { name: '清川' })).toHaveAttribute('href', '/')
     expect(screen.getByRole('link', { name: '巡检工作台' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: '报告库' })).not.toHaveAttribute('aria-current')

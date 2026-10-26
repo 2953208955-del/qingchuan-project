@@ -131,6 +131,9 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
 
   await page.goto('/inspect')
   await page.getByRole('textbox', { name: '巡检指令' }).fill('检查塑料垃圾')
+  await expect(page.getByLabel('选择巡检图片')).toBeDisabled()
+  await page.getByRole('checkbox', { name: '同意隐私与数据使用说明' }).check()
+  await expect(page.getByLabel('选择巡检图片')).toBeEnabled()
   await page.setInputFiles('input[type=file]', {
     name: 'a.png',
     mimeType: 'image/png',
@@ -204,6 +207,7 @@ test('offers the reset after a stream dies mid-run and focuses the instruction',
 
   await page.goto('/inspect')
   await page.getByRole('textbox', { name: '巡检指令' }).fill('检查塑料垃圾')
+  await page.getByRole('checkbox', { name: '同意隐私与数据使用说明' }).check()
   await page.setInputFiles('input[type=file]', {
     name: 'a.png',
     mimeType: 'image/png',

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { useRunStream } from '@/hooks/use-run-stream'
 import { UploadDropzone } from '@/components/inspection/upload-dropzone'
@@ -23,6 +24,7 @@ export default function InspectPage() {
   const [location, setLocation] = useState('')
   const [planning, setPlanning] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // `started` locks the launch button; `finished` gates the evidence view so the
   // canvas never renders the pre-analysis upload ids (only DB ids resolve).
@@ -265,7 +267,21 @@ export default function InspectPage() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,.85fr)]">
           <HoloPanel title="任务投递" subtitle="上传现场照片并描述本次巡检要求" className="min-w-0">
             <div className="space-y-4">
-              <UploadDropzone disabled={busy} onBusyChange={setUploading} />
+              <label className="privacy-consent">
+                <input
+                  type="checkbox"
+                  checked={privacyAccepted}
+                  onChange={event => setPrivacyAccepted(event.target.checked)}
+                  disabled={busy}
+                  aria-label="同意隐私与数据使用说明"
+                />
+                <span>
+                  我已知悉：图片会上传至云端 AI 识别；请勿上传可识别人脸、车牌等个人信息；
+                  服务端会剥离 EXIF/GPS。查看
+                  <Link href="/privacy">隐私与数据说明</Link>。
+                </span>
+              </label>
+              <UploadDropzone disabled={busy || !privacyAccepted} onBusyChange={setUploading} />
               <InstructionInput
                 value={instruction}
                 onChange={updateInstruction}
@@ -291,7 +307,10 @@ export default function InspectPage() {
                 <button
                   type="button"
                   onClick={createPlan}
-                  disabled={busy || uploading || !instruction.trim() || images.length === 0 || plan !== null}
+                  disabled={
+                    busy || uploading || !privacyAccepted || !instruction.trim()
+                    || images.length === 0 || plan !== null
+                  }
                   className="holo-btn holo-btn--primary min-w-36"
                 >
                   {planning ? '生成计划中…' : plan ? '计划已生成' : '生成计划'}
