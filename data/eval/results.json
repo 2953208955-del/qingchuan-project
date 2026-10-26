@@ -42,16 +42,10 @@
         "hit": true,
         "retrieved": [
           "清川SOP 第1条",
-          "CJJ/T 174-2013 第1.0.2条",
-          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
-          "CJJ/T 174-2013 第5.5.2条",
           "清川SOP 第5条"
         ],
         "scores": [
           0.908247,
-          0.725667,
-          0.721958,
-          0.67993,
           0.666575
         ]
       },
@@ -1083,7 +1077,7 @@
       }
     ]
   },
-  "generatedAt": "2026-10-26T11:10:43.824Z",
+  "generatedAt": "2026-10-26T13:04:33.981Z",
   "agent": {
     "successRate": 1,
     "avgLatencyMs": 21871,
@@ -1150,8 +1144,9 @@
     "mode": "live"
   },
   "sectionUpdatedAt": {
-    "rag": "2026-10-26T11:07:13.672Z",
-    "ragHeldout": "2026-10-26T11:10:43.824Z"
+    "rag": "2026-10-26T13:03:36.703Z",
+    "ragHeldout": "2026-10-26T11:10:43.824Z",
+    "ragScoped": "2026-10-26T13:04:33.981Z"
   },
   "ragHeldout": {
     "recallAt5": 1,
@@ -1750,6 +1745,484 @@
           0.674784,
           0.668655
         ]
+      }
+    ]
+  },
+  "ragScoped": {
+    "recallAt5": 0.95,
+    "recallAt3": 0.95,
+    "mrr": 0.925,
+    "noAnswerAccuracy": 1,
+    "total": 30,
+    "answerableTotal": 20,
+    "noAnswerTotal": 10,
+    "rerankThreshold": 0.65,
+    "hybridThreshold": 0.45,
+    "rerankerFallbacks": 0,
+    "details": [
+      {
+        "question": "CJJ/T 174-2013 规定一级水域每5000平方米水面垃圾上限是多少？",
+        "expected": "CJJ/T 174-2013#第6.1.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第6.1.2条"
+        ],
+        "scores": [
+          1
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 规定特级和一级水域保洁频次？",
+        "expected": "DB31/T 1639-2025#第7.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.2条",
+          "DB31/T 1639-2025 第4.3条"
+        ],
+        "scores": [
+          0.999998,
+          0.746049
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 规定可回收物包括哪些？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-可回收物",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "GB/T 19095-2019 摘编-GB/T-7-小类标志设计",
+          "GB/T 19095-2019 摘编-GB/T-4-大类图形符号"
+        ],
+        "scores": [
+          0.998288,
+          0.995946,
+          0.955169,
+          0.780737,
+          0.690962
+        ]
+      },
+      {
+        "question": "清川SOP 规定严重度如何分级？",
+        "expected": "清川SOP#第3条",
+        "expectNoEvidence": false,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": false,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "CJJ/T 174-2013 的堤岸质量指标怎么规定？",
+        "expected": "CJJ/T 174-2013#第6.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第6.2.2条",
+          "CJJ/T 174-2013 摘编-CJJ-6.2-堤岸检查",
+          "CJJ/T 174-2013 第6.3.3条",
+          "CJJ/T 174-2013 摘编-CJJ-7-检查",
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸"
+        ],
+        "scores": [
+          0.945055,
+          0.877715,
+          0.808162,
+          0.743681,
+          0.653002
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 的养护等级怎么划分？",
+        "expected": "DB31/T 1639-2025#第4.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第4.3条",
+          "DB31/T 1639-2025 第7.2.2条",
+          "DB31/T 1639-2025 第7.2.1条",
+          "DB31/T 1639-2025 摘编-DB31-4-目标"
+        ],
+        "scores": [
+          0.995604,
+          0.846615,
+          0.844474,
+          0.723616
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 的有害垃圾包括哪些？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-有害垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾"
+        ],
+        "scores": [
+          0.989762,
+          0.987121
+        ]
+      },
+      {
+        "question": "清川SOP 对低置信识别有什么要求？",
+        "expected": "清川SOP#第4条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第4条"
+        ],
+        "scores": [
+          0.915891
+        ]
+      },
+      {
+        "question": "CJJ/T 174-2013 规定水面拦截设施怎么管理？",
+        "expected": "CJJ/T 174-2013#第5.2.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第5.2.1条",
+          "CJJ/T 174-2013 第6.3.3条",
+          "CJJ/T 174-2013 第5.5.2条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "CJJ/T 174-2013 摘编-CJJ-6.1-水面检查"
+        ],
+        "scores": [
+          0.997298,
+          0.950675,
+          0.912478,
+          0.902521,
+          0.890532
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 规定水生植物覆盖度要求？",
+        "expected": "DB31/T 1639-2025#第7.2.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.1条"
+        ],
+        "scores": [
+          0.999994
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 规定分类标志设置在哪里？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-8.1-设置位置",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-8.1-设置位置",
+          "GB/T 19095-2019 摘编-GB/T-8-标志设置",
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "GB/T 19095-2019 摘编-GB/T-7-小类标志设计",
+          "GB/T 19095-2019 摘编-GB/T-8.2-尺寸材料"
+        ],
+        "scores": [
+          1,
+          1,
+          0.858987,
+          0.810962,
+          0.804166
+        ]
+      },
+      {
+        "question": "清川SOP 要求巡检报告包含什么？",
+        "expected": "清川SOP#第6条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第6条",
+          "清川SOP 第4条"
+        ],
+        "scores": [
+          0.961796,
+          0.855153
+        ]
+      },
+      {
+        "question": "CJJ/T 174-2013 规定大风降雨后怎么做？",
+        "expected": "CJJ/T 174-2013#第5.5.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第5.5.2条",
+          "CJJ/T 174-2013 摘编-CJJ-5.5-应急记录",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-垃圾转运",
+          "CJJ/T 174-2013 摘编-CJJ-5.4-安全",
+          "CJJ/T 174-2013 摘编-CJJ-6.2-堤岸检查"
+        ],
+        "scores": [
+          0.992947,
+          0.848323,
+          0.808358,
+          0.799187,
+          0.688617
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 的防汛通道巡查关注什么？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-5.6-防汛通道",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-5.6-防汛通道",
+          "DB31/T 1639-2025 摘编-DB31-5.1-巡查计划",
+          "DB31/T 1639-2025 摘编-DB31-5.4-河湖床与堤防",
+          "DB31/T 1639-2025 摘编-DB31-9-档案",
+          "DB31/T 1639-2025 摘编-DB31-5.3-水生生物"
+        ],
+        "scores": [
+          0.997378,
+          0.891973,
+          0.878169,
+          0.77042,
+          0.67451
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 的小类标志有多少个？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-6-小类图形符号",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾",
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾",
+          "GB/T 19095-2019 摘编-GB/T-3-其他垃圾"
+        ],
+        "scores": [
+          0.993124,
+          0.87565,
+          0.870567,
+          0.824664,
+          0.753444
+        ]
+      },
+      {
+        "question": "清川SOP 规定水草和树叶计入垃圾吗？",
+        "expected": "清川SOP#第2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第2条"
+        ],
+        "scores": [
+          0.92543
+        ]
+      },
+      {
+        "question": "CJJ/T 174-2013 的质量检查发现未达标怎么办？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-7.2-评价整改",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 摘编-CJJ-7.2-评价整改",
+          "CJJ/T 174-2013 摘编-CJJ-7-检查",
+          "CJJ/T 174-2013 摘编-CJJ-6.2-堤岸检查",
+          "CJJ/T 174-2013 摘编-CJJ-5.5-应急记录"
+        ],
+        "scores": [
+          0.994204,
+          0.958777,
+          0.752679,
+          0.699607
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 规定监测异常怎么办？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-6-异常监测",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-6-异常监测",
+          "DB31/T 1639-2025 摘编-DB31-6-监测",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
+          "DB31/T 1639-2025 摘编-DB31-5.6-防汛通道"
+        ],
+        "scores": [
+          0.996352,
+          0.973433,
+          0.721247,
+          0.683885
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 规定其他垃圾是什么？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-其他垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-其他垃圾",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾",
+          "GB/T 19095-2019 摘编-GB/T-4-大类图形符号",
+          "GB/T 19095-2019 第5.3.3条"
+        ],
+        "scores": [
+          0.999692,
+          0.923974,
+          0.780758,
+          0.768919,
+          0.730364
+        ]
+      },
+      {
+        "question": "清川SOP 规定渔网渔具怎么整改？",
+        "expected": "清川SOP#第5条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.80869
+        ]
+      },
+      {
+        "question": "CJJ/T 174-2013 规定有害垃圾包括哪些？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "DB31/T 1639-2025 规定电池属于哪类生活垃圾？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "GB/T 19095-2019 规定一级水域每天打捞几次？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "清川SOP 规定特级水域保洁频次是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "CJJ/T 174-2013 规定水质 COD 限值是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "DB31/T 1639-2025 规定分类标志颜色是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "GB/T 19095-2019 规定河湖巡查频次是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "清川SOP 规定堤防护岸裂缝怎么养护？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "CJJ/T 174-2013 规定鱼类增殖放流数量怎么确定？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "DB31/T 1639-2025 规定微塑料粒径检测方法是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
       }
     ]
   }

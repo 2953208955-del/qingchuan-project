@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseRagQuestions } from '@/lib/eval/rag-questions'
+import { detectStandardScope } from '@/lib/rag/scope'
 
 function read(name: string) {
   return parseRagQuestions(
@@ -12,6 +13,7 @@ function read(name: string) {
 describe('held-out RAG set', () => {
   const calibration = read('rag-questions.json')
   const heldout = read('rag-questions-heldout.json')
+  const scoped = read('rag-questions-heldout-scoped.json')
 
   it('is a separate, non-empty set with answerable and no-answer probes', () => {
     expect(heldout.length).toBeGreaterThanOrEqual(30)
@@ -30,5 +32,16 @@ describe('held-out RAG set', () => {
       item => item.expectedClause?.startsWith('摘编-'),
     )
     expect(excerptTargets.length).toBeGreaterThanOrEqual(15)
+  })
+
+  it('keeps the source-scoped set separate and standard-targeted', () => {
+    expect(scoped).toHaveLength(30)
+    expect(scoped.filter(item => !item.expectNoEvidence)).toHaveLength(20)
+    expect(scoped.filter(item => item.expectNoEvidence)).toHaveLength(10)
+
+    const known = new Set([...calibration, ...heldout].map(item => item.question))
+    expect(scoped.filter(item => known.has(item.question))).toEqual([])
+    expect(scoped.filter(item => detectStandardScope(item.question).length > 0).length)
+      .toBeGreaterThanOrEqual(25)
   })
 })

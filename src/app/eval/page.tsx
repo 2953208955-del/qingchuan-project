@@ -15,6 +15,7 @@ type Results = {
   detection: DetectionResults | null
   rag: RagResults | null
   ragHeldout: RagResults | null
+  ragScoped: RagResults | null
   agent: AgentResults | null
 }
 
@@ -27,7 +28,7 @@ const COMMANDS = [
 
 const isEmpty: Results = {
   generatedAt: null, sectionUpdatedAt: {}, detection: null,
-  rag: null, ragHeldout: null, agent: null,
+  rag: null, ragHeldout: null, ragScoped: null, agent: null,
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -75,6 +76,7 @@ function loadResults(): Results {
       detection: parseDetection(raw.detection),
       rag: parseRagResults(raw.rag),
       ragHeldout: parseRagResults(raw.ragHeldout),
+      ragScoped: parseRagResults(raw.ragScoped),
       agent: parseAgent(raw.agent),
     }
   } catch {
@@ -106,7 +108,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit?: s
 export default function EvalPage() {
   const results = loadResults()
   const hasResults = results.detection !== null || results.rag !== null
-    || results.ragHeldout !== null || results.agent !== null
+    || results.ragHeldout !== null || results.ragScoped !== null || results.agent !== null
 
   return (
     <div className="eval-page">
@@ -209,6 +211,31 @@ export default function EvalPage() {
                 <Metric
                   label="无答案准确率"
                   value={(results.ragHeldout.noAnswerAccuracy * 100).toFixed(1)}
+                  unit="%"
+                />
+              </div>
+            </HoloPanel>
+          )}
+
+          {results.ragScoped && (
+            <HoloPanel
+              title="RAG · held-out（source-scoped）"
+              subtitle={
+                results.ragScoped.answerableTotal > 0
+                  ? `${results.ragScoped.total} 题 · 可答 ${results.ragScoped.answerableTotal} / 无答案 ${results.ragScoped.noAnswerTotal}`
+                  : `${results.ragScoped.total} 题`
+              }
+              className="eval-panel"
+            >
+              <UpdatedAt value={results.sectionUpdatedAt.ragScoped} />
+              <p className="eval-generated">新题；source-scoping 修复后只运行一次，未调阈值。</p>
+              <div className="eval-metrics">
+                <Metric label="Recall@5" value={results.ragScoped.recallAt5.toFixed(3)} />
+                <Metric label="Recall@3" value={results.ragScoped.recallAt3.toFixed(3)} />
+                <Metric label="MRR" value={results.ragScoped.mrr.toFixed(3)} />
+                <Metric
+                  label="无答案准确率"
+                  value={(results.ragScoped.noAnswerAccuracy * 100).toFixed(1)}
                   unit="%"
                 />
               </div>

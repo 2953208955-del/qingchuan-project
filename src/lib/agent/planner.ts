@@ -15,6 +15,10 @@ import type { Db } from '@/lib/db/client'
 import type { Embedder } from '@/lib/rag/embed'
 import type { Reranker } from '@/lib/rag/rerank'
 import { retrieveClauses } from '@/lib/rag/retrieve'
+import {
+  createInMemoryPlanningMcpClient,
+  type PlanningMcpClient,
+} from './mcp-client'
 
 type Category = z.infer<typeof DebrisCategory>
 
@@ -311,6 +315,7 @@ export async function searchStandardsForPlanning(
   const result = await retrieveClauses(deps, input.query, input.categories ?? [], 5)
   return {
     noEvidence: result.noEvidence,
+    scope: result.scope,
     clauses: result.clauses.map(clause => ({
       standardNo: clause.standardNo,
       clauseNo: clause.clauseNo,
@@ -318,6 +323,15 @@ export async function searchStandardsForPlanning(
       score: clause.score,
     })),
   }
+}
+
+/**
+ * The model may rewrite the tool query and drop a standard name mentioned in
+ * the original instruction. Always prepend the instruction so source scoping
+ * still sees "CJJ/T 174-2013" / "DB31/T 1639-2025" / "清川SOP".
+ */
+export function buildPlanningSearchQuery(instruction: string, query: string): string {
+  return `${instruction}\n${query}`.slice(0, 500)
 }
 
 // Tool calling adds a real retrieval round-trip before the model writes the
@@ -337,6 +351,7 @@ export class DeepSeekPlanningAgent implements PlannerPort {
     reranker?: Reranker
     budget?: BudgetTracker
     timeoutMs?: number
+    createMcpClient?: () => Promise<PlanningMcpClient>
   }) {}
 
   private charge(usage: TokenUsage): void {
@@ -349,6 +364,17 @@ export class DeepSeekPlanningAgent implements PlannerPort {
     }
 
     const trace: PlannerToolTrace[] = []
+    let mcp: PlanningMcpClient | null = null
+    try {
+      mcp = await (this.opts.createMcpClient?.() ?? createInMemoryPlanningMcpClient({
+        db: this.opts.db,
+        embedder: this.opts.embedder,
+        reranker: this.opts.reranker,
+      }))
+    } catch {
+      // Local retrieval remains the fallback; the trace records which path ran.
+    }
+
     const searchTool = tool({
       description: '检索已入库的河湖标准条款，用于判断巡检指令是否有依据',
       inputSchema: z.object({
@@ -357,16 +383,20 @@ export class DeepSeekPlanningAgent implements PlannerPort {
       }),
       execute: async (args) => {
         const started = Date.now()
+        const scopedQuery = buildPlanningSearchQuery(input.instruction, args.query)
+        const scopedInput = { ...args, query: scopedQuery }
         try {
-          const output = await searchStandardsForPlanning({
-            db: this.opts.db,
-            embedder: this.opts.embedder,
-            reranker: this.opts.reranker,
-          }, args)
+          const output = mcp
+            ? await mcp.searchStandards({ query: scopedQuery, categories: args.categories })
+            : await searchStandardsForPlanning({
+                db: this.opts.db,
+                embedder: this.opts.embedder,
+                reranker: this.opts.reranker,
+              }, scopedInput)
           trace.push({
             tool: 'search_standards',
-            input: args,
-            output,
+            input: scopedInput,
+            output: { ...output, via: mcp ? 'mcp' : 'local' },
             latencyMs: Math.max(0, Date.now() - started),
           })
           return output
@@ -430,6 +460,7 @@ export class DeepSeekPlanningAgent implements PlannerPort {
       throw error
     } finally {
       if (timer) clearTimeout(timer)
+      await mcp?.close().catch(() => {})
     }
   }
 }

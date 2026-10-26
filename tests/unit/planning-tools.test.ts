@@ -3,7 +3,10 @@ import path from 'node:path'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { createDb } from '@/lib/db/client'
 import { clauses } from '@/lib/db/schema'
-import { searchStandardsForPlanning } from '@/lib/agent/planner'
+import {
+  buildPlanningSearchQuery,
+  searchStandardsForPlanning,
+} from '@/lib/agent/planner'
 
 function dbWithClause() {
   const db = createDb(':memory:')
@@ -33,6 +36,12 @@ describe('searchStandardsForPlanning', () => {
       standardNo: '清川SOP',
       clauseNo: '第2条',
     })
+  })
+
+  it('keeps a standard named in the original instruction in the tool query', () => {
+    const query = buildPlanningSearchQuery('按 CJJ/T 174-2013 检查塑料垃圾', '塑料垃圾 巡检标准')
+    expect(query).toContain('CJJ/T 174-2013')
+    expect(query).toContain('塑料垃圾 巡检标准')
   })
 
   it('returns noEvidence for an unrelated query', async () => {

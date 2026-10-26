@@ -14,12 +14,18 @@ import { scoreRag, type RagScoredItem } from '../src/lib/eval/rag-score'
 import { round, writeResults } from '../src/lib/eval/results'
 
 const ROOT = process.cwd()
-const HELDOUT = process.argv.includes('--heldout')
+const SCOPED = process.argv.includes('--scoped')
+const HELDOUT = process.argv.includes('--heldout') && !SCOPED
 const QUESTION_FILE = path.resolve(
   ROOT,
-  HELDOUT ? 'tests/eval/rag-questions-heldout.json' : 'tests/eval/rag-questions.json',
+  SCOPED
+    ? 'tests/eval/rag-questions-heldout-scoped.json'
+    : HELDOUT
+      ? 'tests/eval/rag-questions-heldout.json'
+      : 'tests/eval/rag-questions.json',
 )
-const SECTION = HELDOUT ? 'ragHeldout' : 'rag'
+const SECTION = SCOPED ? 'ragScoped' : HELDOUT ? 'ragHeldout' : 'rag'
+const MODE = SCOPED ? 'heldout-scoped' : HELDOUT ? 'heldout' : 'calibration'
 const TOP_K = 5
 
 function readQuestions() {
@@ -164,7 +170,7 @@ async function main() {
       total: rag.total,
       answerableTotal: rag.answerableTotal,
       noAnswerTotal: rag.noAnswerTotal,
-      heldOut: HELDOUT,
+      mode: MODE,
     },
   }, null, 2))
 }

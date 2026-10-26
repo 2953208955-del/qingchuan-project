@@ -6,6 +6,7 @@ import { retrieveClauses } from '@/lib/rag/retrieve'
 import { getDb, type Db } from '@/lib/db/client'
 import { addAgentStep, getLatestReport, getRun } from '@/lib/db/repo'
 import { DashScopeEmbedder, type Embedder } from '@/lib/rag/embed'
+import type { Reranker } from '@/lib/rag/rerank'
 import { QwenVisionAnalyzer, type VisionPort } from '@/lib/vision/qwen'
 import { getVisionModelId } from '@/lib/ai/providers'
 import { createInspectionTools, type InspectionTools } from '@/lib/agent/tool-registry'
@@ -13,6 +14,7 @@ import { createInspectionTools, type InspectionTools } from '@/lib/agent/tool-re
 export interface McpDeps {
   db?: Db
   embedder?: Embedder
+  reranker?: Reranker
   vision?: VisionPort
   tools?: InspectionTools
 }
@@ -34,7 +36,12 @@ export function createMcpServer(deps: McpDeps = {}) {
   }, async ({ query, categories }) => {
     const db = deps.db ?? getDb()
     const embedder = deps.embedder ?? new DashScopeEmbedder(process.env.DASHSCOPE_API_KEY ?? '')
-    const result = await retrieveClauses({ db, embedder }, query, categories, 5)
+    const result = await retrieveClauses(
+      { db, embedder, reranker: deps.reranker },
+      query,
+      categories,
+      5,
+    )
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
   })
 

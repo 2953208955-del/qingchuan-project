@@ -3,6 +3,7 @@ import { clauses as clausesTable } from '@/lib/db/schema'
 import type { Clause, DebrisCategory } from '@/lib/domain/schemas'
 import type { Embedder } from './embed'
 import type { Reranker } from './rerank'
+import { detectStandardScope } from './scope'
 
 export interface ChunkHit {
   id: string
@@ -56,9 +57,16 @@ export function lexicalScore(query: string, content: string): number {
   return hit / q.size
 }
 
-export function searchChunks(db: Db, queryEmbedding: number[], queryText: string, k: number): ChunkHit[] {
+export function searchChunks(
+  db: Db,
+  queryEmbedding: number[],
+  queryText: string,
+  k: number,
+  standardNos: string[] = [],
+): ChunkHit[] {
   const rows = db.select().from(clausesTable).all()
   return rows
+    .filter(row => standardNos.length === 0 || standardNos.includes(row.standardNo))
     .map(row => ({
       id: row.id,
       standardNo: row.standardNo,
@@ -83,6 +91,7 @@ export interface RetrievalResult {
   clauses: Clause[]
   noEvidence: boolean
   reranked: boolean
+  scope: string[]
 }
 
 export async function retrieveClauses(
@@ -91,13 +100,18 @@ export async function retrieveClauses(
   categories: DebrisCategory[],
   topK = 5,
   minScore?: number,
+  standardNos?: string[],
 ): Promise<RetrievalResult> {
   const [embedding] = await deps.embedder.embed([expandQuery(query)])
+  // A named standard is a hard retrieval boundary: a question about CJJ must
+  // not be answered with a DB31 clause merely because it is semantically
+  // close. Generic mentions of "标准" do not trigger a scope.
+  const scope = standardNos ?? detectStandardScope(query)
   // Filter by category before truncating the pre-rerank pool: an eligible
   // clause must not be dropped just because many irrelevant categories rank
   // higher. Untagged clauses are general requirements that apply to every
   // category, so they stay eligible for category-scoped queries.
-  let hits = searchChunks(deps.db, embedding, query, Number.MAX_SAFE_INTEGER)
+  let hits = searchChunks(deps.db, embedding, query, Number.MAX_SAFE_INTEGER, scope)
     .filter(h =>
       categories.length === 0 ||
       h.categoryTags.length === 0 ||
@@ -109,7 +123,7 @@ export async function retrieveClauses(
   if (deps.reranker && hits.length > 0) {
     try {
       const ranked = await deps.reranker.rerank(query, hits.map(h => h.content), Math.min(10, hits.length))
-      if (ranked.length === 0) return { clauses: [], noEvidence: true, reranked: true }
+      if (ranked.length === 0) return { clauses: [], noEvidence: true, reranked: true, scope }
       hits = ranked
         .filter(r => hits[r.index])
         .map(r => ({ ...hits[r.index], score: r.score }))
@@ -123,7 +137,7 @@ export async function retrieveClauses(
 
   const threshold = minScore ?? (reranked ? DEFAULT_RERANK_MIN_SCORE : DEFAULT_HYBRID_MIN_SCORE)
   const kept = hits.filter(h => h.score >= threshold).slice(0, topK)
-  if (kept.length === 0) return { clauses: [], noEvidence: true, reranked }
+  if (kept.length === 0) return { clauses: [], noEvidence: true, reranked, scope }
   return {
     clauses: kept.map(h => ({
       id: h.id, standardNo: h.standardNo, clauseNo: h.clauseNo,
@@ -131,5 +145,6 @@ export async function retrieveClauses(
     })),
     noEvidence: false,
     reranked,
+    scope,
   }
 }

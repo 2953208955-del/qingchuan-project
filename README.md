@@ -121,7 +121,8 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 | `npm run seed` | 写入演示任务、识别与报告（需样例图） |
 | `npm run eval:detection` | 检测评测（GT 匹配 P/R/F1，`-- --dry-run` 仅验证管线） |
 | `npm run eval:rag` | RAG 校准集评测（Recall@5 / Recall@3 / MRR / 无答案准确率） |
-| `npm run eval:rag:heldout` | RAG held-out 评测（阈值固定，不用于调参） |
+| `npm run eval:rag:heldout` | RAG held-out 评测（修复前基线，阈值固定） |
+| `npm run eval:rag:scoped` | RAG source-scoped held-out 评测（新题，只跑一次） |
 | `npm run eval:agent` | Agent 场景评测（真实依赖，无 dry-run） |
 | `npm run mcp` | 以 stdio 启动 MCP Server（等价于 `npx tsx scripts/run-mcp.ts`） |
 
@@ -161,7 +162,8 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 `data/eval/results.json` 只能由真实评测运行生成，禁止手工编写或补数字。当前文件包含多段真实云端运行（RAG 2026-10-26；Agent/检测 2026-10-24）：
 
 - **RAG（校准集）**：**60 题**（50 道可答 + 10 道无答案）；Recall@5 **1.00**、Recall@3 **1.00**、MRR **0.94**、无答案准确率 **1.00**。带 reranker 的评测阈值 `0.65`、无 reranker 的 MCP/回退路径阈值 `0.45`，均在同一题集上校准，属于自建小样本自查，不构成公开基准。
-- **RAG（held-out）**：**32 题**（22 道可答 + 10 道近义干扰/无答案），阈值在运行前固定、**未用于调参**；Recall@5 **1.00**、Recall@3 **1.00**、MRR **0.977**、无答案准确率 **0.30**。可答检索很强，但近义干扰会拿到“别的标准”的条款，说明当前检索缺少按被问标准的来源约束；这是下一步应修的泛化问题，而不是在这批题上调阈值。
+- **RAG（held-out，修复前）**：**32 题**（22 道可答 + 10 道近义干扰/无答案）；Recall@5 **1.00**、Recall@3 **1.00**、MRR **0.977**、无答案准确率 **0.30**。这暴露了跨标准来源约束缺失，作为历史负向结果保留。
+- **RAG（held-out，source-scoped，新题）**：**30 题**（20 道可答 + 10 道近义干扰/无答案），修复后**只运行一次、未调阈值**；Recall@5 **0.95**、Recall@3 **0.95**、MRR **0.925**、无答案准确率 **1.00**。唯一可答 miss 是“清川SOP 规定严重度如何分级？”被 scoped 后 rerank 判为无依据；保留为下一轮新 held-out 的改进线索，不回头调这批题。
 - RAG 两段更新于 2026-10-26；Agent/检测段仍为 2026-10-24。
 - **Agent**：成功率 **4/4（100%）**，平均耗时约 21.9 秒（单次真实运行，2026-10-24）。场景使用不同样例图：`normal` / `no-evidence` 用 `sample-2.jpg`（无低置信目标），`low-confidence` 用 `sample-1.jpg`（含 <0.5 目标），`injection` 在读取图片前即被拒绝。模型输出具有随机性，换一次运行的具体结果可能不同；复核 → 重新生成 → 导出的闭环另有单元测试与 E2E 覆盖。
 - **检测**：10 张 NOAA 公有领域单目标裁片，人工标注 GT，真实 VLM 运行：Precision **0.78**、Recall **0.50**、F1 **0.61**（IoU ≥ 0.5，类别感知）。这是小样本自查，不是大规模基准；GT 为人工粗框，结果不宜与公开数据集的 mAP/F1 直接比较。
@@ -183,11 +185,12 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 ## 提交状态（2026-10-26）
 
 - 本地分支见 `git branch --show-current`；未配置 remote、未推送、未建 tag（最新提交见 `git log -1`）。
-- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**53 文件 / 398 单测**、Playwright **7/7** 全绿。
+- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**55 文件 / 407 单测**、Playwright **7/7** 全绿。
 - 任务解析：DeepSeek Planner + Function Calling 检索工具 + 关键词回退；规划阶段可真实调用 `search_standards` 并展示/持久化调用轨迹；五步计划可确认；关注类别为软提示，检索使用“关注类别 ∪ 实际检出类别”。
 - 可选工具：Planner 按指令选择 `get_river_profile` / `create_work_order`，orchestrator 真实执行并写入 `agent_steps` 与时间线；MCP Server 复用同一工具实现。
-- 规划期 Function Calling：Planner 可调用 `search_standards` 查询知识库，调用轨迹写入 `planningTrace` / `planJson` 并在计划面板展示；真实 smoke 已验证“检索 → 计划 → 选择工单”链路。
-- 真实评测：RAG 校准集 **60 题** Recall@5 **1.00** / Recall@3 **1.00** / MRR **0.94** / 无答案 **1.00**；held-out **32 题** Recall@5 **1.00** / Recall@3 **1.00** / MRR **0.977** / 无答案 **0.30**（未用于调参）；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
+- 规划期 Function Calling + MCP：Planner 通过 in-memory MCP 客户端调用 MCP `search_standards`（协议真实走通，失败回退本地检索）；trace 记录 `via` / `scope`，写入 `planningTrace` / `planJson` 并在计划面板展示。
+- source-scoped retrieval：问题点名 `CJJ/T 174-2013`、`DB31/T 1639-2025`、`GB/T 19095-2019` 或 `清川SOP` 时，检索只在该标准内进行；旧 held-out 的近义拒答 0.30 → 新 scoped held-out 1.00。
+- 真实评测：RAG 校准集 **60 题** Recall@5 **1.00** / Recall@3 **1.00** / MRR **0.94** / 无答案 **1.00**；held-out（修复前）**32 题** Recall@5 **1.00** / MRR **0.977** / 无答案 **0.30**；source-scoped held-out（新题）**30 题** Recall@5 **0.95** / Recall@3 **0.95** / MRR **0.925** / 无答案 **1.00**；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
 - 待完成：5–8 分钟视频、≤30 页 PDF、公开仓库与演示地址、团队信息；11/14 冻结后再建 tag。
 - 详见 [提交检查清单](docs/submission-checklist.md)。
 

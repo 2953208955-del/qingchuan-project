@@ -39,6 +39,24 @@ function dbWithCategoryOutliers() {
   return db
 }
 
+function dbWithTwoStandards() {
+  const db = createDb(':memory:')
+  migrate(db, { migrationsFolder: path.resolve('drizzle') })
+  db.insert(clauses).values([
+    {
+      id: 'sop', documentId: 'sop', standardNo: '清川SOP', clauseNo: '第2条',
+      title: '类别', content: '塑料瓶属于塑料类垃圾',
+      categoryTags: '["plastic_bottle"]', embeddingJson: '[1,0,0]',
+    },
+    {
+      id: 'cjj', documentId: 'cjj', standardNo: 'CJJ/T 174-2013', clauseNo: '第2.0.2条',
+      title: '漂浮废弃物', content: '塑料瓶属于水面漂浮废弃物',
+      categoryTags: '["plastic_bottle"]', embeddingJson: '[1,0,0]',
+    },
+  ]).run()
+  return db
+}
+
 function dbWithUntaggedGeneral() {
   const db = createDb(':memory:')
   migrate(db, { migrationsFolder: path.resolve('drizzle') })
@@ -162,6 +180,20 @@ describe('retrieval', () => {
     const result = await retrieveClauses({ db, embedder: fakeEmbedder, reranker }, '塑料瓶', [], 5, 0.5)
     expect(result.noEvidence).toBe(false)
     expect(result.clauses.map(c => c.id)).toEqual(['c1'])
+  })
+
+  it('scopes retrieval to a standard named in the query', async () => {
+    const db = dbWithTwoStandards()
+    const result = await retrieveClauses(
+      { db, embedder: fakeEmbedder },
+      'CJJ/T 174-2013 规定塑料瓶怎么处置？',
+      [],
+      5,
+      0.1,
+    )
+
+    expect(result.noEvidence).toBe(false)
+    expect(result.clauses.map(clause => clause.id)).toEqual(['cjj'])
   })
 
   it('returns only clauses matching the requested categories', async () => {

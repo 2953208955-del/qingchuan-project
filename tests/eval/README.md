@@ -53,6 +53,16 @@
   “别的标准”的条款；下一步应做来源约束，并在**新的** held-out 集上验证，而不是
   在这批题上调阈值。
 
+### `rag-questions-heldout-scoped.json`
+
+- 与校准集同 schema，当前 30 题（20 道可答 + 10 道近义干扰/无答案）。
+- 这是 **source-scoped retrieval 修复后新建的 held-out**，题目不复用校准集或旧 held-out；
+  只运行一次，**未用于调阈值或改语料**。
+- 运行方式：`npm run eval:rag:scoped`，结果写入 `ragScoped` 段。
+- 当前真实结果：Recall@5 0.95、Recall@3 0.95、MRR 0.925、无答案准确率 **1.00**。
+  唯一可答 miss 是“清川SOP 规定严重度如何分级？”被 scoped 后判为无依据；保留为
+  下一轮新 held-out 的改进线索，不要回头调这批题。
+
 ### `detection-fixtures.json`
 
 ```json
@@ -120,8 +130,11 @@ npm run eval:detection
 # RAG 校准集：先 npm run ingest 并配置 DASHSCOPE_API_KEY
 npm run eval:rag
 
-# RAG held-out：阈值固定后运行，不用于调参
+# RAG held-out：修复前基线，阈值固定
 npm run eval:rag:heldout
+
+# RAG source-scoped held-out：修复后新题，只跑一次，不用于调参
+npm run eval:rag:scoped
 
 # Agent：配置 DASHSCOPE_API_KEY 且准备 public/samples/sample-1.jpg
 npm run eval:agent
