@@ -23,7 +23,7 @@ export function getRun(db: Db, id: string) {
   return db.select().from(runs).where(eq(runs.id, id)).get()
 }
 
-export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'status' | 'error' | 'totalCostCny' | 'promptVersion'>>) {
+export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'status' | 'error' | 'totalCostCny' | 'promptVersion' | 'focusCategories'>>) {
   db.update(runs).set({ ...patch, updatedAt: Date.now() }).where(eq(runs.id, id)).run()
 }
 
@@ -52,6 +52,20 @@ export function claimRunForRegeneration(db: Db, id: string): number {
     .where(and(
       eq(runs.id, id),
       inArray(runs.status, ['awaiting_review', 'completed', 'stale', 'failed']),
+    ))
+    .run()
+    .changes
+}
+
+// Planning performs a paid/async planner call before it can write focus and
+// cost. Claim the run first so a second plan request cannot double-charge and
+// an analyze request cannot claim a run whose plan is still in flight.
+export function claimRunForPlanning(db: Db, id: string): number {
+  return db.update(runs)
+    .set({ status: 'planning', updatedAt: Date.now() })
+    .where(and(
+      eq(runs.id, id),
+      inArray(runs.status, ['idle', 'planned']),
     ))
     .run()
     .changes

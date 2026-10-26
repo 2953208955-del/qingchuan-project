@@ -8,6 +8,7 @@ type BadgeTone = 'cyan' | 'gold' | 'magenta' | 'muted'
 
 const RUN_STATUS: Record<DashboardRun['status'], { label: string; tone: BadgeTone }> = {
   idle: { label: '空闲', tone: 'muted' },
+  planning: { label: '生成计划中', tone: 'cyan' },
   planned: { label: '已规划', tone: 'muted' },
   analyzing: { label: '分析中', tone: 'cyan' },
   aggregating: { label: '汇总中', tone: 'cyan' },

@@ -291,10 +291,10 @@ export default function InspectPage() {
                 <button
                   type="button"
                   onClick={createPlan}
-                  disabled={busy || uploading || !instruction.trim() || images.length === 0}
+                  disabled={busy || uploading || !instruction.trim() || images.length === 0 || plan !== null}
                   className="holo-btn holo-btn--primary min-w-36"
                 >
-                  {planning ? '生成计划中…' : '生成计划'}
+                  {planning ? '生成计划中…' : plan ? '计划已生成' : '生成计划'}
                 </button>
               </div>
 

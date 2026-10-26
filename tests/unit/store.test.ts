@@ -27,7 +27,11 @@ describe('inspection store', () => {
 
   it('sets a plan and selection', () => {
     const s = useInspectionStore.getState()
-    s.setPlan({ imageCount: 3, focusCategories: [], estimatedSeconds: 20, estimatedCostCny: 0.2, output: 'inspection_report' })
+    s.setPlan({
+      imageCount: 3, focusCategories: [], intentSummary: '检查河岸垃圾',
+      steps: [], parsedBy: 'heuristic', estimatedSeconds: 20, estimatedCostCny: 0.2,
+      output: 'inspection_report',
+    })
     s.setSelectedDetection('d1')
     expect(useInspectionStore.getState().plan?.imageCount).toBe(3)
     expect(useInspectionStore.getState().selectedDetectionId).toBe('d1')
@@ -69,7 +73,11 @@ describe('inspection store', () => {
     const s = useInspectionStore.getState()
     s.setRunId('r1')
     s.setImages([image('a')])
-    s.setPlan({ imageCount: 1, focusCategories: [], estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report' })
+    s.setPlan({
+      imageCount: 1, focusCategories: [], intentSummary: '检查河岸垃圾',
+      steps: [], parsedBy: 'heuristic', estimatedSeconds: 5, estimatedCostCny: 0.02,
+      output: 'inspection_report',
+    })
     s.addStep(step())
     const detection = {
       id: 'd1', imageId: 'a', category: 'plastic_bottle', material: null, confidence: 0.9,

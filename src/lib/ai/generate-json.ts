@@ -68,12 +68,14 @@ export async function generateJson<T>(opts: {
   system: string
   prompt: string
   temperature?: number
+  abortSignal?: AbortSignal
 }): Promise<{ value: T; usage: { inputTokens: number; outputTokens: number }; raw: string }> {
   const result = await generateText({
     model: opts.model,
     system: opts.system,
     prompt: opts.prompt,
     temperature: opts.temperature ?? 0.1,
+    abortSignal: opts.abortSignal,
   })
   // Failed parse/schema attempts still consumed tokens; carry usage on the
   // error so the reporter can charge them before retrying.

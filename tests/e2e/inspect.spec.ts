@@ -52,6 +52,23 @@ const detail = {
   }],
 }
 
+const planPayload = {
+  imageCount: 1,
+  focusCategories: ['plastic_bottle'],
+  intentSummary: '检查塑料垃圾',
+  steps: [
+    { key: 'analyze', title: '识别图片', detail: '分析 1 张图片，重点关注塑料瓶；其他类别仍会记录' },
+    { key: 'aggregate', title: '汇总与严重度', detail: '按代码公式汇总加权检出量、检出强度与严重度' },
+    { key: 'retrieve', title: '检索标准条款', detail: '检索清川 SOP 条款，并绑定到结论证据' },
+    { key: 'draft', title: '起草报告', detail: '由文本模型起草结论；每条结论必须绑定证据' },
+    { key: 'verify', title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
+  ],
+  parsedBy: 'llm',
+  estimatedSeconds: 5,
+  estimatedCostCny: 0.02,
+  output: 'inspection_report',
+}
+
 const sse = [
   'event: step',
   'data: {"type":"step","runId":"run-1","step":{"id":"s1","step":"analyze_image","status":"done","toolName":"analyzeImage","detail":"1 个目标","latencyMs":12,"costCny":0}}',
@@ -76,13 +93,7 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   await page.route('**/api/runs/run-1/plan', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({
-      imageCount: 1,
-      focusCategories: [],
-      estimatedSeconds: 5,
-      estimatedCostCny: 0.02,
-      output: 'inspection_report',
-    }),
+    body: JSON.stringify(planPayload),
   }))
   await page.route('**/api/runs/run-1/analyze', route => route.fulfill({
     status: 200,
@@ -121,7 +132,12 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   await expect(page.getByText('已选 1/20 张')).toBeVisible()
 
   await page.getByRole('button', { name: '生成计划' }).click()
-  await expect(page.getByRole('dialog', { name: '执行计划确认' })).toBeVisible()
+  const planDialog = page.getByRole('dialog', { name: '执行计划确认' })
+  await expect(planDialog).toBeVisible()
+  await expect(planDialog).toContainText('任务理解：检查塑料垃圾')
+  await expect(planDialog).toContainText('汇总与严重度')
+  await expect(planDialog).toContainText('其他类别仍会识别并保留')
+  await expect(page.getByRole('button', { name: '计划已生成' })).toBeDisabled()
   await page.getByRole('button', { name: '开始巡检（确认执行计划）' }).click()
 
   await expect(page.getByRole('region', { name: 'Agent 执行时间线' }).getByText('analyze_image')).toBeVisible()
@@ -164,13 +180,7 @@ test('offers the reset after a stream dies mid-run and focuses the instruction',
   await page.route('**/api/runs/run-1/plan', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({
-      imageCount: 1,
-      focusCategories: [],
-      estimatedSeconds: 5,
-      estimatedCostCny: 0.02,
-      output: 'inspection_report',
-    }),
+    body: JSON.stringify(planPayload),
   }))
   await page.route('**/api/runs/run-1/analyze', route => route.fulfill({
     status: 200,

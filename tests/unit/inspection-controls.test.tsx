@@ -75,15 +75,44 @@ describe('PlanConfirm', () => {
   const plan = {
     imageCount: 2,
     focusCategories: ['plastic_bottle', 'foam'] as const,
+    intentSummary: '重点检查塑料类垃圾',
+    steps: [
+      { key: 'analyze' as const, title: '识别图片', detail: '分析 2 张图片，重点关注塑料瓶、泡沫塑料；其他类别仍会记录' },
+      { key: 'aggregate' as const, title: '汇总与严重度', detail: '按代码公式汇总加权检出量、检出强度与严重度' },
+      { key: 'retrieve' as const, title: '检索标准条款', detail: '检索清川 SOP 条款，并绑定到结论证据' },
+      { key: 'draft' as const, title: '起草报告', detail: '由文本模型起草结论；每条结论必须绑定证据' },
+      { key: 'verify' as const, title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
+    ],
+    parsedBy: 'llm' as const,
     estimatedSeconds: 10,
     estimatedCostCny: 0.04,
     output: 'inspection_report' as const,
   }
 
-  it('renders category labels and the cost estimate', () => {
+  it('renders the parsed task, five steps, focus note and estimates', () => {
     render(<PlanConfirm plan={{ ...plan, focusCategories: [...plan.focusCategories] }} onConfirm={() => {}} onCancel={() => {}} />)
-    expect(screen.getByText(/重点类别：塑料瓶、泡沫塑料/)).toBeInTheDocument()
+
+    expect(screen.getByText(/任务理解：重点检查塑料类垃圾/)).toBeInTheDocument()
+    expect(screen.getByText(/重点关注：塑料瓶、泡沫塑料/)).toBeInTheDocument()
+    expect(screen.getByText(/其他类别仍会识别并保留，供人工复核/)).toBeInTheDocument()
+    for (const title of ['识别图片', '汇总与严重度', '检索标准条款', '起草报告', '校验与复核']) {
+      expect(screen.getByText(title)).toBeInTheDocument()
+    }
+    expect(screen.getByText(/AI 解析/)).toBeInTheDocument()
     expect(screen.getByText(/费用约 ¥0.04/)).toBeInTheDocument()
+  })
+
+  it('labels the heuristic fallback honestly', () => {
+    render(
+      <PlanConfirm
+        plan={{ ...plan, focusCategories: [], parsedBy: 'heuristic' }}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    )
+
+    expect(screen.getByText(/规则解析/)).toBeInTheDocument()
+    expect(screen.getByText(/重点关注：未指定（全部类别）/)).toBeInTheDocument()
   })
 
   it('disables both actions while another plan request is running', () => {

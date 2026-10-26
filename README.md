@@ -9,6 +9,7 @@
 1. **拍照即巡检，门槛低。** 不需要专业设备或本地 GPU：手机/无人机照片 + 一句话指令即可产出结构化巡检结果，普通浏览器就能使用。
 2. **结论可追溯，敢用于整改。** 报告中的每条结论都绑定原图识别框、置信度与标准条款；低置信目标自动进入人工复核队列，Verifier 校验证据与数字一致性。
 3. **从识别到报告闭环。** 识别、严重度计算、标准检索、报告生成、复核纠错、PDF 导出和 MCP 工单集成在同一条流程里，减少重复整理材料的时间。
+4. **计划可确认，关注不丢证据。** Planner 把一句话解析为关注类别与五步执行计划，用户确认后才开始分析；关注类别只是视觉提示，其他类别仍会识别、统计并进入复核。
 
 ## 功能截图
 
@@ -19,7 +20,7 @@
 ```mermaid
 flowchart TB
   UI["浏览器 UI<br/>上传 / 时间线 / 证据面板 / 报告"] --> API["Next.js Route Handlers<br/>REST + SSE"]
-  API --> ORCH["Agent 编排状态机<br/>计划 → 分析 → 汇总 → 检索 → 起草 → 校验"]
+  API --> ORCH["Agent 编排状态机<br/>指令解析/计划 → 分析 → 汇总 → 检索 → 起草 → 校验"]
   ORCH --> VISION["云端视觉 API<br/>Qwen-VL"]
   ORCH --> RAG["云端检索 API<br/>Qwen-Embedding / Rerank"]
   ORCH --> REP["云端文本 API<br/>DeepSeek 报告生成"]
@@ -88,7 +89,7 @@ set -a; . ./.env.local; set +a
 npm run seed
 ```
 
-演示数据说明：`npm run seed` 写入的识别结果与报告是**人工构造的示例数据**（报告内 `source: manual`，页面显示"人工构造示例"徽标），用于演示复核与导出流程；它不是实时 AI 模型输出，也不是评测证据。仓库不预置样例照片，评测结果同样待真实标注与运行后生成。
+演示数据说明：`npm run seed` 写入的识别结果与报告是**人工构造的示例数据**（报告内 `source: manual`，页面显示"人工构造示例"徽标），用于演示复核与导出流程；它不是实时 AI 模型输出，也不是评测证据。仓库在 `public/samples/` 提供 NOAA 公有领域样例照片；真实评测结果由脚本写入 `data/eval/results.json`，并在 `/eval` 页面展示。
 
 Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变量；`.env.local` 不会被 Next.js 之外的 `tsx` 脚本自动加载。
 
@@ -149,10 +150,11 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 - 请勿拍摄可识别人脸、车牌等个人信息；如不可避免，请先打码。应用会原样保存上传的图片字节，**不会自动剥离 EXIF/GPS**，请在**上传前自行移除**。
 - API Key 只保存在服务器的 `.env` 中，权限 600，不进入 Git；演示样例图需登记来源与许可证。
 
-## 提交状态（2026-10-24）
+## 提交状态（2026-10-26）
 
-- 分支 `feat/qingchuan-implementation`（最新提交见 `git log -1`）；未合并、未推送、未建 tag。
-- 质量门：lint 0 error、typecheck、build、**265 单测**、Playwright **3/3** 全绿。
+- 本地分支见 `git branch --show-current`；未配置 remote、未推送、未建 tag（最新提交见 `git log -1`）。
+- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**46 文件 / 356 单测**、Playwright **7/7** 全绿。
+- 任务解析：DeepSeek Planner + 关键词回退；五步计划可确认；关注类别为软提示，检索使用“关注类别 ∪ 实际检出类别”。
 - 真实评测：RAG Recall@5 **1.00**（35/35）；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
 - 待完成：5–8 分钟视频、≤30 页 PDF、公开仓库与演示地址、团队信息；11/14 冻结后再建 tag。
 - 详见 [提交检查清单](docs/submission-checklist.md)。
