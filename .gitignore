@@ -44,6 +44,10 @@ next-env.d.ts
 
 # local runtime data and test output
 data/*
+!data/knowledge/
+data/knowledge/*
+!data/knowledge/*.md
+!data/knowledge/sources.json
 !data/eval/
 data/eval/*
 !data/eval/results.json

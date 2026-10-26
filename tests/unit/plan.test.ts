@@ -31,8 +31,9 @@ function setup(options: { imageCount?: number; status?: string } = {}) {
 function planIntent(
   focusCategories: PlanIntent['focusCategories'],
   intentSummary = '重点检查塑料类',
+  tools: PlanIntent['tools'] = [],
 ): PlanIntent {
-  return { intentSummary, focusCategories }
+  return { intentSummary, focusCategories, tools }
 }
 
 function planner(overrides: Partial<PlannerPort> = {}): PlannerPort & { parse: ReturnType<typeof vi.fn> } {
@@ -108,6 +109,25 @@ describe('createPlanForRun', () => {
     expect(parse.parse).toHaveBeenCalledTimes(1)
     expect(repo.getRun(db, runId)?.status).toBe('planned')
     expect(repo.getRun(db, runId)?.totalCostCny).toBeCloseTo(0.01)
+  })
+
+  it('persists optional tools and the full plan JSON on the run', async () => {
+    const { db, runId } = setup()
+    const parse = planner({
+      parse: vi.fn(async () => planIntent(
+        ['plastic_bottle'],
+        '生成整改工单',
+        ['create_work_order'],
+      )),
+    })
+
+    const outcome = await createPlanForRun(db, runId, { planner: parse })
+
+    expect(outcome.ok).toBe(true)
+    if (!outcome.ok) return
+    expect(outcome.plan.tools).toEqual(['create_work_order'])
+    const stored = JSON.parse(repo.getRun(db, runId)?.planJson ?? '{}') as { tools?: string[] }
+    expect(stored.tools).toEqual(['create_work_order'])
   })
 
   it('falls back to keyword parsing when the planner fails', async () => {

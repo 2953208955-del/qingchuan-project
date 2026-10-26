@@ -68,6 +68,21 @@ describe('parseInstructionHeuristic', () => {
 
     expect(result.focusCategories).toEqual(['plastic_bottle', 'plastic_bag', 'foam'])
   })
+
+  it('selects optional tools only when explicitly requested', () => {
+    expect(parseInstructionHeuristic('生成整改工单').tools).toEqual(['create_work_order'])
+    expect(parseInstructionHeuristic('查一下河段档案').tools).toEqual(['get_river_profile'])
+    expect(parseInstructionHeuristic('检查塑料垃圾').tools).toEqual([])
+  })
+
+  it('does not select a negated tool', () => {
+    expect(parseInstructionHeuristic('不要生成工单').tools).toEqual([])
+  })
+
+  it('does not treat query/status wording as a work-order request', () => {
+    expect(parseInstructionHeuristic('查询工单状态').tools).toEqual([])
+    expect(parseInstructionHeuristic('这个工单处理得怎么样').tools).toEqual([])
+  })
 })
 
 describe('normalizePlanIntent', () => {
@@ -107,6 +122,32 @@ describe('normalizePlanIntent', () => {
 
     expect(result.focusCategories).toEqual(['plastic_bottle'])
   })
+
+  it('dedupes and filters negated optional tools from model output', () => {
+    const requested = normalizePlanIntent('生成工单', {
+      intentSummary: '',
+      focusCategories: [],
+      tools: ['create_work_order', 'create_work_order'],
+    })
+    expect(requested.tools).toEqual(['create_work_order'])
+
+    const negated = normalizePlanIntent('不要生成工单', {
+      intentSummary: '',
+      focusCategories: [],
+      tools: ['create_work_order'],
+    })
+    expect(negated.tools).toEqual([])
+  })
+
+  it('drops model-selected tools that the instruction never requested', () => {
+    const result = normalizePlanIntent('检查塑料垃圾', {
+      intentSummary: '',
+      focusCategories: [],
+      tools: ['get_river_profile', 'create_work_order'],
+    })
+
+    expect(result.tools).toEqual([])
+  })
 })
 
 describe('DeepSeekInspectionPlanner', () => {
@@ -125,7 +166,11 @@ describe('DeepSeekInspectionPlanner', () => {
 
     const result = await planner.parse(input)
 
-    expect(result).toEqual({ intentSummary: '统计塑料类', focusCategories: ['plastic_bottle'] })
+    expect(result).toEqual({
+      intentSummary: '统计塑料类',
+      focusCategories: ['plastic_bottle'],
+      tools: [],
+    })
     expect(budget.spent).toBeGreaterThan(0)
   })
 

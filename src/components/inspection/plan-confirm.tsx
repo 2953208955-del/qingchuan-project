@@ -1,6 +1,6 @@
 'use client'
 
-import { CATEGORY_LABELS, type Plan } from '@/lib/domain/schemas'
+import { CATEGORY_LABELS, OPTIONAL_TOOL_LABELS, type Plan } from '@/lib/domain/schemas'
 
 export function PlanConfirm({ plan, onConfirm, onCancel, disabled = false }: {
   plan: Plan
@@ -20,6 +20,11 @@ export function PlanConfirm({ plan, onConfirm, onCancel, disabled = false }: {
       <p className="plan-confirm__note">
         仅影响视觉识别时的关注提示；其他类别仍会识别并保留，供人工复核。
       </p>
+      {plan.tools.length > 0 && (
+        <p className="plan-confirm__line">
+          额外工具：{plan.tools.map(tool => OPTIONAL_TOOL_LABELS[tool]).join('、')}（mock）
+        </p>
+      )}
       {plan.steps.length > 0 && (
         <ol className="plan-confirm__steps" aria-label="执行步骤">
           {plan.steps.map((step, index) => (

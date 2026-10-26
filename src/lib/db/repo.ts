@@ -23,7 +23,7 @@ export function getRun(db: Db, id: string) {
   return db.select().from(runs).where(eq(runs.id, id)).get()
 }
 
-export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'status' | 'error' | 'totalCostCny' | 'promptVersion' | 'focusCategories'>>) {
+export function updateRun(db: Db, id: string, patch: Partial<Pick<RunRow, 'status' | 'error' | 'totalCostCny' | 'promptVersion' | 'focusCategories' | 'planJson'>>) {
   db.update(runs).set({ ...patch, updatedAt: Date.now() }).where(eq(runs.id, id)).run()
 }
 

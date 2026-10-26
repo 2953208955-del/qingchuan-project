@@ -1,37 +1,292 @@
 [
-  { "question": "这个巡检规范适用于哪些水体？", "expectedClause": "第1条" },
-  { "question": "河湖岸线垃圾巡检适用什么标准？", "expectedClause": "第1条" },
-  { "question": "近岸水域的垃圾巡检是否适用该 SOP？", "expectedClause": "第1条" },
-  { "question": "小型水体垃圾巡检该参照哪份规范？", "expectedClause": "第1条" },
-  { "question": "基层河长进行垃圾巡检应遵循什么规范？", "expectedClause": "第1条" },
-  { "question": "志愿者参与河湖保洁时可以依据这份 SOP 吗？", "expectedClause": "第1条" },
-  { "question": "塑料瓶属于哪一类垃圾？", "expectedClause": "第2条" },
-  { "question": "巡检时垃圾分为哪几类？", "expectedClause": "第2条" },
-  { "question": "泡沫塑料算不算巡检统计的垃圾类别？", "expectedClause": "第2条" },
-  { "question": "渔网渔具属于哪一类？", "expectedClause": "第2条" },
-  { "question": "水草和树叶要不要计入垃圾统计？", "expectedClause": "第2条" },
-  { "question": "自然漂浮物需要计入垃圾数量吗？", "expectedClause": "第2条" },
-  { "question": "玻璃和金属分别属于什么垃圾类别？", "expectedClause": "第2条" },
-  { "question": "严重度低中高是如何划分的？", "expectedClause": "第3条" },
-  { "question": "检出强度怎么计算？", "expectedClause": "第3条" },
-  { "question": "污染强度小于 2 属于什么严重度？", "expectedClause": "第3条" },
-  { "question": "强度在 2 到 5 之间是哪个等级？", "expectedClause": "第3条" },
-  { "question": "加权检出量除以图片数量得到什么指标？", "expectedClause": "第3条" },
-  { "question": "出现渔网渔具时严重度最低是什么级别？", "expectedClause": "第3条" },
-  { "question": "发现玻璃或金属时严重度会怎么调整？", "expectedClause": "第3条" },
-  { "question": "污染强度大于等于 5 是什么严重度？", "expectedClause": "第3条" },
-  { "question": "每条巡检结论需要对应哪些证据？", "expectedClause": "第4条" },
-  { "question": "置信度低于多少的识别项必须人工复核？", "expectedClause": "第4条" },
-  { "question": "低置信度识别结果能不能直接写入报告？", "expectedClause": "第4条" },
-  { "question": "报告里的结论如何做到可追溯到原图？", "expectedClause": "第4条" },
-  { "question": "塑料类垃圾应该怎样处理？", "expectedClause": "第5条" },
-  { "question": "渔网渔具的清理有什么要求？", "expectedClause": "第5条" },
-  { "question": "清理渔网时为什么要避免缠绕水生动物？", "expectedClause": "第5条" },
-  { "question": "塑料瓶和塑料袋优先采用什么整改方式？", "expectedClause": "第5条" },
-  { "question": "巡检报告需要包含哪些内容？", "expectedClause": "第6条" },
-  { "question": "报告中必须写明巡检时间和地点吗？", "expectedClause": "第6条" },
-  { "question": "没有标准依据时可以编造引用吗？", "expectedClause": "第6条" },
-  { "question": "报告里要包含局限性说明吗？", "expectedClause": "第6条" },
-  { "question": "报告需要给出分类统计和整改建议吗？", "expectedClause": "第6条" },
-  { "question": "无标准依据时报告应该怎么处理引用？", "expectedClause": "第6条" }
+  {
+    "question": "这份巡检规范适用于哪些水体？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第1条"
+  },
+  {
+    "question": "志愿者参与河湖保洁可以依据这份 SOP 吗？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第1条"
+  },
+  {
+    "question": "水草和树叶要不要计入垃圾统计？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第2条"
+  },
+  {
+    "question": "巡检垃圾分为哪几类？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第2条"
+  },
+  {
+    "question": "检出强度怎么计算？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第3条"
+  },
+  {
+    "question": "发现渔网渔具时严重度最低是什么级别？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第3条"
+  },
+  {
+    "question": "置信度低于多少必须人工复核？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第4条"
+  },
+  {
+    "question": "巡检报告需要包含哪些内容？",
+    "expectedStandardNo": "清川SOP",
+    "expectedClause": "第6条"
+  },
+  {
+    "question": "城市水域保洁标准适用于哪些水域？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第1.0.2条"
+  },
+  {
+    "question": "堤岸包括哪些构筑物？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第2.0.1条"
+  },
+  {
+    "question": "漂浮废弃物包括哪些东西？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第2.0.2条"
+  },
+  {
+    "question": "水域保洁作业的基本要求是什么？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第3.0.1条"
+  },
+  {
+    "question": "城市水域保洁等级怎么划分？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第4.0.2条"
+  },
+  {
+    "question": "哪些水域属于一级保洁？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第4.0.2条"
+  },
+  {
+    "question": "水面保洁为什么要巡回和定点打捞结合？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-5.2-水面保洁"
+  },
+  {
+    "question": "哪些区域应作为水面打捞重点？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-5.2-水面保洁"
+  },
+  {
+    "question": "拦截设施里的垃圾应该怎么处理？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第5.2.1条"
+  },
+  {
+    "question": "水生植物什么时候清理？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-5.2-水生植物"
+  },
+  {
+    "question": "堤岸保洁包括哪些区域？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-5.3-堤岸"
+  },
+  {
+    "question": "保洁船作业人员有什么安全要求？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-5.4-安全"
+  },
+  {
+    "question": "大风降雨后应及时做什么？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第5.5.2条"
+  },
+  {
+    "question": "一级水域每5000平方米水面垃圾允许多少？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第6.1.2条"
+  },
+  {
+    "question": "二级堤岸每200米暴露垃圾允许多少？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第6.2.2条"
+  },
+  {
+    "question": "水上公共设施周边吊挂杂物怎么控制？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "第6.3.3条"
+  },
+  {
+    "question": "保洁质量检查发现未达标怎么办？",
+    "expectedStandardNo": "CJJ/T 174-2013",
+    "expectedClause": "摘编-CJJ-7-检查"
+  },
+  {
+    "question": "DB31/T 1639-2025 适用于哪些区域？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-1-范围"
+  },
+  {
+    "question": "河湖养护分为哪几个等级？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第4.3条"
+  },
+  {
+    "question": "市管河湖养护等级最低是什么？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第4.3条"
+  },
+  {
+    "question": "河湖养护的“六无”目标是什么？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-4-目标"
+  },
+  {
+    "question": "水域垃圾巡查包括哪些类型？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-5.2-水域巡查"
+  },
+  {
+    "question": "哪些情况要提高水域巡查频率？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-5.2-水域巡查"
+  },
+  {
+    "question": "水质巡查发现黑臭水体怎么办？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-5.2-水质与水生态"
+  },
+  {
+    "question": "河湖监测包括哪些内容？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-6-监测"
+  },
+  {
+    "question": "特级、一级水域保洁频次是多少？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第7.2.2条"
+  },
+  {
+    "question": "三级水域保洁频次是多少？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第7.2.2条"
+  },
+  {
+    "question": "水生植物覆盖度有什么要求？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第7.2.1条"
+  },
+  {
+    "question": "二级水域保洁频次是多少？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "第7.2.2条"
+  },
+  {
+    "question": "台风过后要做什么？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-8-应急"
+  },
+  {
+    "question": "河湖养护档案要记录什么？",
+    "expectedStandardNo": "DB31/T 1639-2025",
+    "expectedClause": "摘编-DB31-9-档案"
+  },
+  {
+    "question": "GB/T 19095-2019 规定哪些分类标志？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-1-范围"
+  },
+  {
+    "question": "可回收物包括哪些小类？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-可回收物"
+  },
+  {
+    "question": "塑料瓶属于哪一类生活垃圾？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-可回收物"
+  },
+  {
+    "question": "有害垃圾包括哪些？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-有害垃圾"
+  },
+  {
+    "question": "电池属于什么垃圾？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-有害垃圾"
+  },
+  {
+    "question": "厨余垃圾包括哪些？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-厨余垃圾"
+  },
+  {
+    "question": "其他垃圾包括什么？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-3-其他垃圾"
+  },
+  {
+    "question": "可回收物标志是什么颜色？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "第5.3.3条"
+  },
+  {
+    "question": "有害垃圾标志是什么颜色？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "第5.3.3条"
+  },
+  {
+    "question": "小类图形符号一共有几个？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-6-小类图形符号"
+  },
+  {
+    "question": "分类标志应该设置在哪里？",
+    "expectedStandardNo": "GB/T 19095-2019",
+    "expectedClause": "摘编-GB/T-8-标志设置"
+  },
+  {
+    "question": "火星上的垃圾按什么标准分类？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "无人机电池续航时间要求是多少？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "桥梁结构荷载设计规范是什么？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "河湖水质 COD 限值是多少？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "微塑料粒径检测方法是什么？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "海面油污应急处置流程是什么？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "鱼类增殖放流数量怎么确定？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "河长制考核评分公式是什么？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "污泥脱水含水率限值是多少？",
+    "expectNoEvidence": true
+  },
+  {
+    "question": "水鸟栖息地保护距离是多少？",
+    "expectNoEvidence": true
+  }
 ]

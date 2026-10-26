@@ -6,6 +6,7 @@ import { RagRetrievalAdapter } from '@/lib/agent/retrieval-adapter'
 import { QwenVisionAnalyzer } from '@/lib/vision/qwen'
 import { DashScopeEmbedder } from '@/lib/rag/embed'
 import { DashScopeReranker } from '@/lib/rag/rerank'
+import { createInspectionTools } from '@/lib/agent/tool-registry'
 import {
   BudgetTracker,
   dailyBudgetError,
@@ -92,6 +93,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           reporter: new DeepSeekReportGenerator({ budget }),
           verifier: { verify: verifyReport },
           budget,
+          tools: createInspectionTools(),
           emit,
           now: () => new Date(),
         })

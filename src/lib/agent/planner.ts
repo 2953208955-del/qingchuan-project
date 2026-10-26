@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DebrisCategory } from '@/lib/domain/schemas'
+import { DebrisCategory, OptionalTool } from '@/lib/domain/schemas'
 import { BudgetExceededError, BudgetTracker, estimateCostCny } from '@/lib/ai/budget'
 import { generateJson, JsonParseError, JsonSchemaError, type TokenUsage } from '@/lib/ai/generate-json'
 import { getTextModel, getTextModelId } from '@/lib/ai/providers'
@@ -10,6 +10,7 @@ type Category = z.infer<typeof DebrisCategory>
 const PlannerModelOutput = z.object({
   intentSummary: z.string().max(200),
   focusCategories: z.array(DebrisCategory).max(10),
+  tools: z.array(OptionalTool).max(2).default([]),
 })
 
 export type PlannerGenerator = (
@@ -24,6 +25,7 @@ export interface PlannerPort {
 export interface PlanIntent {
   intentSummary: string
   focusCategories: Category[]
+  tools: OptionalTool[]
 }
 
 const SUMMARY_MAX = 80
@@ -41,6 +43,16 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
   textile: ['织物', '衣物', '布料'],
   other: ['其他垃圾'],
   natural: ['水草', '树叶', '自然漂浮物', '浮萍'],
+}
+
+const TOOL_KEYWORDS: Record<OptionalTool, string[]> = {
+  get_river_profile: ['河段档案', '河段信息', '河道档案', '河道信息', '河段背景'],
+  // Creation verbs only: a bare "工单" may be a status/view request and must
+  // not trigger a side effect.
+  create_work_order: [
+    '生成工单', '创建工单', '新建工单', '开单', '派单',
+    '整改单', '整改工单', '生成整改单', '创建整改单',
+  ],
 }
 
 const GENERIC_PLASTIC = ['塑料']
@@ -123,6 +135,10 @@ function summaryFor(instruction: string): string {
   return trimmed.slice(0, SUMMARY_MAX) || '按默认巡检流程执行'
 }
 
+function selectTools(instruction: string): OptionalTool[] {
+  return OptionalTool.options.filter(tool => mentions(instruction, TOOL_KEYWORDS[tool]).positive)
+}
+
 /**
  * Deterministic fallback when the planner model is unavailable. It only
  * derives a soft focus list; it never removes categories from detection,
@@ -145,6 +161,7 @@ export function parseInstructionHeuristic(instruction: string): PlanIntent {
     // DebrisCategory.options order keeps the UI stable regardless of how the
     // instruction mentions the categories.
     focusCategories: DebrisCategory.options.filter(category => selected.has(category)),
+    tools: selectTools(instruction),
   }
 }
 
@@ -154,7 +171,7 @@ export function parseInstructionHeuristic(instruction: string): PlanIntent {
  */
 export function normalizePlanIntent(
   instruction: string,
-  raw: { intentSummary: string; focusCategories: Category[] },
+  raw: { intentSummary: string; focusCategories: Category[]; tools?: OptionalTool[] },
 ): PlanIntent {
   const focusCategories = [...new Set(raw.focusCategories)].filter(category => {
     const specific = keywordMentions(instruction, category)
@@ -163,9 +180,17 @@ export function normalizePlanIntent(
     return !onlyNegated
   })
 
+  const tools = [...new Set(raw.tools ?? [])].filter(tool => {
+    const toolMentions = mentions(instruction, TOOL_KEYWORDS[tool])
+    // Model output is untrusted: a tool must be positively requested by the
+    // user. An unmentioned tool is not permission to act.
+    return toolMentions.positive && !toolMentions.negated
+  })
+
   return {
     intentSummary: raw.intentSummary.trim().slice(0, SUMMARY_MAX) || summaryFor(instruction),
     focusCategories,
+    tools,
   }
 }
 

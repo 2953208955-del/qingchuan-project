@@ -211,6 +211,7 @@ export async function createPlanForRun(
       focusCategories: intent.focusCategories,
       intentSummary: intent.intentSummary,
       steps: buildSteps(images.length, intent.focusCategories),
+      tools: intent.tools,
       parsedBy,
       estimatedSeconds: images.length * 5,
       estimatedCostCny: Number((images.length * 0.02).toFixed(2)),
@@ -221,6 +222,7 @@ export async function createPlanForRun(
     repo.updateRun(db, runId, {
       status: 'planned',
       focusCategories: JSON.stringify(intent.focusCategories),
+      planJson: JSON.stringify(plan),
       totalCostCny,
       error: null,
     })
@@ -238,6 +240,7 @@ export async function createPlanForRun(
       outputJson: JSON.stringify({
         intentSummary: intent.intentSummary,
         focusCategories: intent.focusCategories,
+        tools: intent.tools,
         parsedBy,
         fallbackReason,
         promptVersion: parsedBy === 'llm' ? PROMPT_VERSIONS.planner : null,

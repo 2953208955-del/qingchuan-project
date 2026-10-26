@@ -63,6 +63,16 @@ describe('eval results file', () => {
     expect(readResults(file)).toEqual(document)
   })
 
+  it('records a per-section update time alongside the last-updated time', () => {
+    const first = writeResults('rag', { recallAt5: 1 }, file)
+    expect(first.sectionUpdatedAt?.rag).toBe(first.generatedAt)
+
+    const second = writeResults('detection', { f1: 0.5 }, file)
+    expect(second.sectionUpdatedAt?.rag).toBe(first.generatedAt)
+    expect(second.sectionUpdatedAt?.detection).toBe(second.generatedAt)
+    expect(second.sectionUpdatedAt?.agent).toBeUndefined()
+  })
+
   it('leaves no temporary files behind', () => {
     writeResults('detection', { f1: 0.4 }, file)
 

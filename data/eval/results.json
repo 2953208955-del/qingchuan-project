@@ -1,361 +1,1063 @@
 {
   "rag": {
     "recallAt5": 1,
-    "total": 35,
+    "recallAt3": 1,
+    "mrr": 0.97,
+    "noAnswerAccuracy": 1,
+    "total": 60,
+    "answerableTotal": 50,
+    "noAnswerTotal": 10,
+    "rerankThreshold": 0.65,
+    "hybridThreshold": 0.45,
+    "rerankerFallbacks": 0,
     "details": [
       {
-        "question": "这个巡检规范适用于哪些水体？",
-        "expected": "第1条",
+        "question": "这份巡检规范适用于哪些水体？",
+        "expected": "清川SOP#第1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
           "清川SOP 第1条",
-          "清川SOP 第2条",
-          "清川SOP 第6条"
+          "DB31/T 1639-2025 摘编-DB31-1-范围",
+          "CJJ/T 174-2013 第1.0.2条",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查"
+        ],
+        "scores": [
+          0.998394,
+          0.95502,
+          0.906634,
+          0.898919,
+          0.76443
         ]
       },
       {
-        "question": "河湖岸线垃圾巡检适用什么标准？",
-        "expected": "第1条",
+        "question": "志愿者参与河湖保洁可以依据这份 SOP 吗？",
+        "expected": "清川SOP#第1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
           "清川SOP 第1条",
-          "清川SOP 第6条",
-          "清川SOP 第2条",
-          "清川SOP 第3条",
+          "CJJ/T 174-2013 第1.0.2条",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
+          "CJJ/T 174-2013 第5.5.2条",
           "清川SOP 第5条"
-        ]
-      },
-      {
-        "question": "近岸水域的垃圾巡检是否适用该 SOP？",
-        "expected": "第1条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第1条",
-          "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第3条",
-          "清川SOP 第6条"
-        ]
-      },
-      {
-        "question": "小型水体垃圾巡检该参照哪份规范？",
-        "expected": "第1条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第1条",
-          "清川SOP 第6条",
-          "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "基层河长进行垃圾巡检应遵循什么规范？",
-        "expected": "第1条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第1条",
-          "清川SOP 第2条",
-          "清川SOP 第6条",
-          "清川SOP 第5条",
-          "清川SOP 第4条"
-        ]
-      },
-      {
-        "question": "志愿者参与河湖保洁时可以依据这份 SOP 吗？",
-        "expected": "第1条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第1条",
-          "清川SOP 第5条",
-          "清川SOP 第2条",
-          "清川SOP 第6条"
-        ]
-      },
-      {
-        "question": "塑料瓶属于哪一类垃圾？",
-        "expected": "第2条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第2条",
-          "清川SOP 第5条"
-        ]
-      },
-      {
-        "question": "巡检时垃圾分为哪几类？",
-        "expected": "第2条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第1条",
-          "清川SOP 第6条"
-        ]
-      },
-      {
-        "question": "泡沫塑料算不算巡检统计的垃圾类别？",
-        "expected": "第2条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第2条",
-          "清川SOP 第1条",
-          "清川SOP 第5条",
-          "清川SOP 第6条"
-        ]
-      },
-      {
-        "question": "渔网渔具属于哪一类？",
-        "expected": "第2条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第3条"
+        ],
+        "scores": [
+          0.908247,
+          0.725667,
+          0.721958,
+          0.67993,
+          0.666575
         ]
       },
       {
         "question": "水草和树叶要不要计入垃圾统计？",
-        "expected": "第2条",
+        "expected": "清川SOP#第2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
           "清川SOP 第2条",
-          "清川SOP 第1条",
-          "清川SOP 第5条"
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查"
+        ],
+        "scores": [
+          1,
+          0.707037
         ]
       },
       {
-        "question": "自然漂浮物需要计入垃圾数量吗？",
-        "expected": "第2条",
+        "question": "巡检垃圾分为哪几类？",
+        "expected": "清川SOP#第2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
           "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第1条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "玻璃和金属分别属于什么垃圾类别？",
-        "expected": "第2条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第2条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "严重度低中高是如何划分的？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条",
-          "清川SOP 第4条"
+          "GB/T 19095-2019 摘编-GB/T-3-其他垃圾",
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查"
+        ],
+        "scores": [
+          0.999652,
+          0.897249,
+          0.870126,
+          0.851163,
+          0.806644
         ]
       },
       {
         "question": "检出强度怎么计算？",
-        "expected": "第3条",
+        "expected": "清川SOP#第3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第3条",
+          "清川SOP 第3条"
+        ],
+        "scores": [
+          0.999224
+        ]
+      },
+      {
+        "question": "发现渔网渔具时严重度最低是什么级别？",
+        "expected": "清川SOP#第3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "清川SOP 第3条"
+        ],
+        "scores": [
+          0.954611
+        ]
+      },
+      {
+        "question": "置信度低于多少必须人工复核？",
+        "expected": "清川SOP#第4条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
           "清川SOP 第4条"
-        ]
-      },
-      {
-        "question": "污染强度小于 2 属于什么严重度？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "强度在 2 到 5 之间是哪个等级？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "加权检出量除以图片数量得到什么指标？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条",
-          "清川SOP 第4条"
-        ]
-      },
-      {
-        "question": "出现渔网渔具时严重度最低是什么级别？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条",
-          "清川SOP 第5条",
-          "清川SOP 第2条",
-          "清川SOP 第4条"
-        ]
-      },
-      {
-        "question": "发现玻璃或金属时严重度会怎么调整？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条",
-          "清川SOP 第4条",
-          "清川SOP 第2条"
-        ]
-      },
-      {
-        "question": "污染强度大于等于 5 是什么严重度？",
-        "expected": "第3条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "每条巡检结论需要对应哪些证据？",
-        "expected": "第4条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第4条",
-          "清川SOP 第6条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "置信度低于多少的识别项必须人工复核？",
-        "expected": "第4条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第4条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "低置信度识别结果能不能直接写入报告？",
-        "expected": "第4条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第4条",
-          "清川SOP 第6条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "报告里的结论如何做到可追溯到原图？",
-        "expected": "第4条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第4条",
-          "清川SOP 第6条",
-          "清川SOP 第3条"
-        ]
-      },
-      {
-        "question": "塑料类垃圾应该怎样处理？",
-        "expected": "第5条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第5条",
-          "清川SOP 第2条"
-        ]
-      },
-      {
-        "question": "渔网渔具的清理有什么要求？",
-        "expected": "第5条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第5条",
-          "清川SOP 第2条",
-          "清川SOP 第3条",
-          "清川SOP 第6条",
-          "清川SOP 第1条"
-        ]
-      },
-      {
-        "question": "清理渔网时为什么要避免缠绕水生动物？",
-        "expected": "第5条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第5条"
-        ]
-      },
-      {
-        "question": "塑料瓶和塑料袋优先采用什么整改方式？",
-        "expected": "第5条",
-        "hit": true,
-        "retrieved": [
-          "清川SOP 第5条",
-          "清川SOP 第2条"
+        ],
+        "scores": [
+          1
         ]
       },
       {
         "question": "巡检报告需要包含哪些内容？",
-        "expected": "第6条",
+        "expected": "清川SOP#第6条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
           "清川SOP 第6条",
+          "DB31/T 1639-2025 摘编-DB31-9-档案",
           "清川SOP 第4条",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态"
+        ],
+        "scores": [
+          0.998704,
+          0.83465,
+          0.798845,
+          0.672366
+        ]
+      },
+      {
+        "question": "城市水域保洁标准适用于哪些水域？",
+        "expected": "CJJ/T 174-2013#第1.0.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第1.0.2条",
+          "CJJ/T 174-2013 第4.0.2条",
+          "清川SOP 第1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "DB31/T 1639-2025 摘编-DB31-1-范围"
+        ],
+        "scores": [
+          1,
+          0.993103,
+          0.924206,
+          0.866585,
+          0.832717
+        ]
+      },
+      {
+        "question": "堤岸包括哪些构筑物？",
+        "expected": "CJJ/T 174-2013#第2.0.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第2.0.1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸"
+        ],
+        "scores": [
+          0.98707,
+          0.842671
+        ]
+      },
+      {
+        "question": "漂浮废弃物包括哪些东西？",
+        "expected": "CJJ/T 174-2013#第2.0.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第2.0.2条",
           "清川SOP 第2条",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
+          "CJJ/T 174-2013 第5.2.1条",
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.999964,
+          0.918589,
+          0.860944,
+          0.785745,
+          0.75788
+        ]
+      },
+      {
+        "question": "水域保洁作业的基本要求是什么？",
+        "expected": "CJJ/T 174-2013#第3.0.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第3.0.1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.4-安全",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "DB31/T 1639-2025 摘编-DB31-4-目标",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水生植物"
+        ],
+        "scores": [
+          1,
+          0.999799,
+          0.975145,
+          0.947195,
+          0.911227
+        ]
+      },
+      {
+        "question": "城市水域保洁等级怎么划分？",
+        "expected": "CJJ/T 174-2013#第4.0.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第4.0.2条",
+          "CJJ/T 174-2013 第6.1.2条",
+          "DB31/T 1639-2025 第7.2.2条",
+          "CJJ/T 174-2013 第6.3.3条",
+          "DB31/T 1639-2025 第4.3条"
+        ],
+        "scores": [
+          1,
+          0.98629,
+          0.905332,
+          0.892294,
+          0.887359
+        ]
+      },
+      {
+        "question": "哪些水域属于一级保洁？",
+        "expected": "CJJ/T 174-2013#第4.0.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第4.0.2条",
+          "DB31/T 1639-2025 第4.3条",
+          "CJJ/T 174-2013 第1.0.2条",
+          "CJJ/T 174-2013 第6.1.2条"
+        ],
+        "scores": [
+          0.999901,
+          0.89165,
+          0.702185,
+          0.694769
+        ]
+      },
+      {
+        "question": "水面保洁为什么要巡回和定点打捞结合？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-5.2-水面保洁",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水生植物"
+        ],
+        "scores": [
+          0.971396,
+          0.69895
+        ]
+      },
+      {
+        "question": "哪些区域应作为水面打捞重点？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-5.2-水面保洁",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "CJJ/T 174-2013 第5.5.2条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水生植物",
           "清川SOP 第5条",
+          "CJJ/T 174-2013 第5.2.1条"
+        ],
+        "scores": [
+          1,
+          0.939488,
+          0.916865,
+          0.80723,
+          0.783088
+        ]
+      },
+      {
+        "question": "拦截设施里的垃圾应该怎么处理？",
+        "expected": "CJJ/T 174-2013#第5.2.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第5.2.1条",
+          "CJJ/T 174-2013 第5.5.2条",
+          "清川SOP 第5条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "CJJ/T 174-2013 第6.3.3条"
+        ],
+        "scores": [
+          0.999733,
+          0.838011,
+          0.791246,
+          0.773756,
+          0.724854
+        ]
+      },
+      {
+        "question": "水生植物什么时候清理？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-5.2-水生植物",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水生植物",
+          "CJJ/T 174-2013 第5.2.1条",
+          "CJJ/T 174-2013 第5.5.2条"
+        ],
+        "scores": [
+          0.970964,
+          0.946846,
+          0.89811,
+          0.74948
+        ]
+      },
+      {
+        "question": "堤岸保洁包括哪些区域？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-5.3-堤岸",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第2.0.1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸",
+          "CJJ/T 174-2013 第1.0.2条",
+          "CJJ/T 174-2013 第5.5.2条",
           "清川SOP 第1条"
+        ],
+        "scores": [
+          1,
+          0.999756,
+          0.881854,
+          0.832758,
+          0.781444
         ]
       },
       {
-        "question": "报告中必须写明巡检时间和地点吗？",
-        "expected": "第6条",
+        "question": "保洁船作业人员有什么安全要求？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-5.4-安全",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第6条",
-          "清川SOP 第4条",
+          "CJJ/T 174-2013 摘编-CJJ-5.4-安全",
+          "CJJ/T 174-2013 第3.0.1条"
+        ],
+        "scores": [
+          1,
+          0.682502
+        ]
+      },
+      {
+        "question": "大风降雨后应及时做什么？",
+        "expected": "CJJ/T 174-2013#第5.5.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第5.5.2条",
+          "DB31/T 1639-2025 摘编-DB31-8-应急",
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸",
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.98447,
+          0.775641,
+          0.678038,
+          0.661279
+        ]
+      },
+      {
+        "question": "一级水域每5000平方米水面垃圾允许多少？",
+        "expected": "CJJ/T 174-2013#第6.1.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第6.1.2条",
+          "CJJ/T 174-2013 第6.2.2条"
+        ],
+        "scores": [
+          1,
+          0.704081
+        ]
+      },
+      {
+        "question": "二级堤岸每200米暴露垃圾允许多少？",
+        "expected": "CJJ/T 174-2013#第6.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 第6.2.2条",
+          "CJJ/T 174-2013 第6.3.3条",
+          "CJJ/T 174-2013 第6.1.2条"
+        ],
+        "scores": [
+          1,
+          0.984266,
+          0.721191
+        ]
+      },
+      {
+        "question": "水上公共设施周边吊挂杂物怎么控制？",
+        "expected": "CJJ/T 174-2013#第6.3.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸",
+          "CJJ/T 174-2013 第6.3.3条",
+          "CJJ/T 174-2013 第5.2.1条",
+          "CJJ/T 174-2013 第6.2.2条",
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.965117,
+          0.948165,
+          0.823003,
+          0.790736,
+          0.746763
+        ]
+      },
+      {
+        "question": "保洁质量检查发现未达标怎么办？",
+        "expected": "CJJ/T 174-2013#摘编-CJJ-7-检查",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "CJJ/T 174-2013 摘编-CJJ-7-检查"
+        ],
+        "scores": [
+          0.939954
+        ]
+      },
+      {
+        "question": "DB31/T 1639-2025 适用于哪些区域？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-1-范围",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-1-范围",
+          "DB31/T 1639-2025 第4.3条",
+          "DB31/T 1639-2025 摘编-DB31-4-目标",
           "清川SOP 第1条"
+        ],
+        "scores": [
+          0.999574,
+          0.909865,
+          0.6965,
+          0.691719
         ]
       },
       {
-        "question": "没有标准依据时可以编造引用吗？",
-        "expected": "第6条",
+        "question": "河湖养护分为哪几个等级？",
+        "expected": "DB31/T 1639-2025#第4.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第6条"
+          "DB31/T 1639-2025 第4.3条",
+          "CJJ/T 174-2013 第4.0.2条",
+          "DB31/T 1639-2025 第7.2.2条",
+          "CJJ/T 174-2013 第6.1.2条",
+          "DB31/T 1639-2025 第7.2.1条"
+        ],
+        "scores": [
+          1,
+          0.867371,
+          0.863215,
+          0.758803,
+          0.746827
         ]
       },
       {
-        "question": "报告里要包含局限性说明吗？",
-        "expected": "第6条",
+        "question": "市管河湖养护等级最低是什么？",
+        "expected": "DB31/T 1639-2025#第4.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第6条",
-          "清川SOP 第4条"
+          "DB31/T 1639-2025 第4.3条",
+          "DB31/T 1639-2025 第7.2.2条",
+          "CJJ/T 174-2013 第4.0.2条"
+        ],
+        "scores": [
+          0.998934,
+          0.79752,
+          0.777783
         ]
       },
       {
-        "question": "报告需要给出分类统计和整改建议吗？",
-        "expected": "第6条",
+        "question": "河湖养护的“六无”目标是什么？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-4-目标",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第6条",
+          "DB31/T 1639-2025 摘编-DB31-4-目标"
+        ],
+        "scores": [
+          0.99075
+        ]
+      },
+      {
+        "question": "水域垃圾巡查包括哪些类型？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-5.2-水域巡查",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
           "清川SOP 第2条",
-          "清川SOP 第5条",
-          "清川SOP 第4条",
-          "清川SOP 第3条"
+          "清川SOP 第1条",
+          "CJJ/T 174-2013 摘编-CJJ-5.2-水面保洁",
+          "CJJ/T 174-2013 第2.0.2条"
+        ],
+        "scores": [
+          1,
+          0.93217,
+          0.88195,
+          0.852997,
+          0.848666
         ]
       },
       {
-        "question": "无标准依据时报告应该怎么处理引用？",
-        "expected": "第6条",
+        "question": "哪些情况要提高水域巡查频率？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-5.2-水域巡查",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
         "hit": true,
         "retrieved": [
-          "清川SOP 第6条",
-          "清川SOP 第4条",
-          "清川SOP 第3条"
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态",
+          "DB31/T 1639-2025 第7.2.2条",
+          "DB31/T 1639-2025 摘编-DB31-6-监测",
+          "CJJ/T 174-2013 第5.5.2条"
+        ],
+        "scores": [
+          0.978727,
+          0.931285,
+          0.924139,
+          0.747797,
+          0.664251
         ]
+      },
+      {
+        "question": "水质巡查发现黑臭水体怎么办？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-5.2-水质与水生态",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水域巡查"
+        ],
+        "scores": [
+          0.806392,
+          0.749333
+        ]
+      },
+      {
+        "question": "河湖监测包括哪些内容？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-6-监测",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-6-监测",
+          "DB31/T 1639-2025 摘编-DB31-9-档案",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态",
+          "DB31/T 1639-2025 摘编-DB31-1-范围"
+        ],
+        "scores": [
+          1,
+          0.854691,
+          0.781407,
+          0.742725
+        ]
+      },
+      {
+        "question": "特级、一级水域保洁频次是多少？",
+        "expected": "DB31/T 1639-2025#第7.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.2条"
+        ],
+        "scores": [
+          0.999995
+        ]
+      },
+      {
+        "question": "三级水域保洁频次是多少？",
+        "expected": "DB31/T 1639-2025#第7.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.2条",
+          "CJJ/T 174-2013 第6.1.2条",
+          "CJJ/T 174-2013 第6.3.3条",
+          "CJJ/T 174-2013 第6.2.2条"
+        ],
+        "scores": [
+          0.999837,
+          0.703528,
+          0.668248,
+          0.656106
+        ]
+      },
+      {
+        "question": "水生植物覆盖度有什么要求？",
+        "expected": "DB31/T 1639-2025#第7.2.1条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.1条",
+          "CJJ/T 174-2013 第6.1.2条"
+        ],
+        "scores": [
+          0.999997,
+          0.898024
+        ]
+      },
+      {
+        "question": "二级水域保洁频次是多少？",
+        "expected": "DB31/T 1639-2025#第7.2.2条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 第7.2.2条",
+          "CJJ/T 174-2013 第6.1.2条",
+          "CJJ/T 174-2013 第6.2.2条"
+        ],
+        "scores": [
+          0.999939,
+          0.697026,
+          0.652789
+        ]
+      },
+      {
+        "question": "台风过后要做什么？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-8-应急",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-8-应急",
+          "CJJ/T 174-2013 第5.5.2条",
+          "CJJ/T 174-2013 摘编-CJJ-5.3-堤岸",
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.802096,
+          0.800757,
+          0.786606,
+          0.762338
+        ]
+      },
+      {
+        "question": "河湖养护档案要记录什么？",
+        "expected": "DB31/T 1639-2025#摘编-DB31-9-档案",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "DB31/T 1639-2025 摘编-DB31-9-档案",
+          "DB31/T 1639-2025 摘编-DB31-5.2-水质与水生态",
+          "CJJ/T 174-2013 第5.5.2条",
+          "CJJ/T 174-2013 摘编-CJJ-7-检查",
+          "DB31/T 1639-2025 摘编-DB31-6-监测"
+        ],
+        "scores": [
+          0.999925,
+          0.809765,
+          0.806218,
+          0.754522,
+          0.701421
+        ]
+      },
+      {
+        "question": "GB/T 19095-2019 规定哪些分类标志？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-1-范围",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 第5.3.3条",
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾"
+        ],
+        "scores": [
+          0.975017,
+          0.965386,
+          0.937392,
+          0.912441,
+          0.881074
+        ]
+      },
+      {
+        "question": "可回收物包括哪些小类？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-可回收物",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "清川SOP 第2条"
+        ],
+        "scores": [
+          0.997905,
+          0.988471,
+          0.883345,
+          0.73722
+        ]
+      },
+      {
+        "question": "塑料瓶属于哪一类生活垃圾？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-可回收物",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "清川SOP 第2条",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "清川SOP 第5条"
+        ],
+        "scores": [
+          0.939567,
+          0.918141,
+          0.800841,
+          0.782263,
+          0.652888
+        ]
+      },
+      {
+        "question": "有害垃圾包括哪些？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-有害垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号"
+        ],
+        "scores": [
+          0.979476,
+          0.93389
+        ]
+      },
+      {
+        "question": "电池属于什么垃圾？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-有害垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号"
+        ],
+        "scores": [
+          0.925687,
+          0.867497
+        ]
+      },
+      {
+        "question": "厨余垃圾包括哪些？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-厨余垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号"
+        ],
+        "scores": [
+          0.964569,
+          0.901208
+        ]
+      },
+      {
+        "question": "其他垃圾包括什么？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-3-其他垃圾",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-3-其他垃圾",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "清川SOP 第2条",
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾",
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾"
+        ],
+        "scores": [
+          0.944457,
+          0.821233,
+          0.732936,
+          0.668083,
+          0.653172
+        ]
+      },
+      {
+        "question": "可回收物标志是什么颜色？",
+        "expected": "GB/T 19095-2019#第5.3.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 第5.3.3条"
+        ],
+        "scores": [
+          0.996187
+        ]
+      },
+      {
+        "question": "有害垃圾标志是什么颜色？",
+        "expected": "GB/T 19095-2019#第5.3.3条",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 第5.3.3条"
+        ],
+        "scores": [
+          0.9938
+        ]
+      },
+      {
+        "question": "小类图形符号一共有几个？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-6-小类图形符号",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物",
+          "GB/T 19095-2019 摘编-GB/T-3-厨余垃圾",
+          "GB/T 19095-2019 摘编-GB/T-3-有害垃圾"
+        ],
+        "scores": [
+          0.99815,
+          0.777784,
+          0.696322,
+          0.696284
+        ]
+      },
+      {
+        "question": "分类标志应该设置在哪里？",
+        "expected": "GB/T 19095-2019#摘编-GB/T-8-标志设置",
+        "expectNoEvidence": false,
+        "noEvidence": false,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [
+          "GB/T 19095-2019 摘编-GB/T-8-标志设置",
+          "GB/T 19095-2019 摘编-GB/T-1-范围",
+          "GB/T 19095-2019 第5.3.3条",
+          "GB/T 19095-2019 摘编-GB/T-6-小类图形符号",
+          "GB/T 19095-2019 摘编-GB/T-3-可回收物"
+        ],
+        "scores": [
+          1,
+          0.82304,
+          0.780996,
+          0.739725,
+          0.657976
+        ]
+      },
+      {
+        "question": "火星上的垃圾按什么标准分类？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "无人机电池续航时间要求是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "桥梁结构荷载设计规范是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "河湖水质 COD 限值是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "微塑料粒径检测方法是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "海面油污应急处置流程是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "鱼类增殖放流数量怎么确定？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "河长制考核评分公式是什么？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "污泥脱水含水率限值是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
+      },
+      {
+        "question": "水鸟栖息地保护距离是多少？",
+        "expected": null,
+        "expectNoEvidence": true,
+        "noEvidence": true,
+        "reranked": true,
+        "hit": true,
+        "retrieved": [],
+        "scores": []
       }
     ]
   },
-  "generatedAt": "2026-10-24T13:06:11.676Z",
+  "generatedAt": "2026-10-26T10:51:20.605Z",
   "agent": {
     "successRate": 1,
     "avgLatencyMs": 21871,
@@ -420,5 +1122,8 @@
     "fn": 7,
     "images": 10,
     "mode": "live"
+  },
+  "sectionUpdatedAt": {
+    "rag": "2026-10-26T10:51:20.605Z"
   }
 }

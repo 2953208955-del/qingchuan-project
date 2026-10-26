@@ -4,18 +4,22 @@ import { computeSeverity } from '@/lib/domain/severity'
 import { DebrisCategory, Detection, Severity } from '@/lib/domain/schemas'
 import { retrieveClauses } from '@/lib/rag/retrieve'
 import { getDb, type Db } from '@/lib/db/client'
+import { addAgentStep, getLatestReport, getRun } from '@/lib/db/repo'
 import { DashScopeEmbedder, type Embedder } from '@/lib/rag/embed'
 import { QwenVisionAnalyzer, type VisionPort } from '@/lib/vision/qwen'
 import { getVisionModelId } from '@/lib/ai/providers'
+import { createInspectionTools, type InspectionTools } from '@/lib/agent/tool-registry'
 
 export interface McpDeps {
   db?: Db
   embedder?: Embedder
   vision?: VisionPort
+  tools?: InspectionTools
 }
 
 export function createMcpServer(deps: McpDeps = {}) {
   const server = new McpServer({ name: 'qingchuan-inspection', version: '1.0.0' })
+  const tools = deps.tools ?? createInspectionTools()
 
   server.registerTool('compute_severity', {
     description: '根据识别结果计算严重度（纯代码）',
@@ -47,18 +51,47 @@ export function createMcpServer(deps: McpDeps = {}) {
   })
 
   server.registerTool('create_work_order', {
-    description: '创建 mock 整改工单',
+    description: '创建 mock 整改工单（报告须已完成且可导出）',
     inputSchema: { runId: z.string(), severity: z.enum(Severity.options) },
-  }, async ({ runId, severity }) => ({
-    content: [{ type: 'text', text: JSON.stringify({ ticketId: `MOCK-${runId.slice(0, 8)}`, severity, mock: true }) }],
-  }))
+  }, async ({ runId, severity }) => {
+    const db = deps.db ?? getDb()
+    const run = getRun(db, runId)
+    if (!run) throw new Error('任务不存在')
+    if (run.status !== 'completed') {
+      throw new Error(`任务状态为 ${run.status}，报告尚未完成，不能创建工单`)
+    }
+    const report = getLatestReport(db, runId)
+    if (!report || report.status !== 'draft') {
+      throw new Error('报告尚待人工复核或已过期，不能创建工单')
+    }
+
+    const result = await tools.createWorkOrder({ runId, severity })
+    const now = Date.now()
+    addAgentStep(db, {
+      id: crypto.randomUUID(),
+      runId,
+      step: 'create_work_order_mcp',
+      status: 'done',
+      toolName: 'createWorkOrder',
+      inputJson: JSON.stringify({ severity }),
+      outputJson: JSON.stringify(result),
+      detail: `工单 ${result.ticketId}（mock）`,
+      latencyMs: 0,
+      costCny: null,
+      error: null,
+      startedAt: now,
+      finishedAt: now,
+    })
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  })
 
   server.registerTool('get_river_profile', {
     description: '返回 mock 河段档案',
     inputSchema: { riverId: z.string() },
-  }, async ({ riverId }) => ({
-    content: [{ type: 'text', text: JSON.stringify({ riverId, name: '示例河段', lengthKm: 3.2, mock: true }) }],
-  }))
+  }, async ({ riverId }) => {
+    const result = await tools.getRiverProfile({ riverId })
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  })
 
   return server
 }

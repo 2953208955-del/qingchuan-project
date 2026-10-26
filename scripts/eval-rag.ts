@@ -4,16 +4,20 @@ import { getDb } from '../src/lib/db/client'
 import { clauses } from '../src/lib/db/schema'
 import { DashScopeEmbedder } from '../src/lib/rag/embed'
 import { DashScopeReranker } from '../src/lib/rag/rerank'
-import { retrieveClauses } from '../src/lib/rag/retrieve'
+import {
+  DEFAULT_HYBRID_MIN_SCORE,
+  DEFAULT_RERANK_MIN_SCORE,
+  retrieveClauses,
+} from '../src/lib/rag/retrieve'
+import { parseRagQuestions } from '../src/lib/eval/rag-questions'
+import { scoreRag, type RagScoredItem } from '../src/lib/eval/rag-score'
 import { round, writeResults } from '../src/lib/eval/results'
-
-type Question = { question: string; expectedClause: string }
 
 const ROOT = process.cwd()
 const QUESTION_FILE = path.resolve(ROOT, 'tests/eval/rag-questions.json')
 const TOP_K = 5
 
-function readQuestions(): Question[] {
+function readQuestions() {
   if (!fs.existsSync(QUESTION_FILE)) {
     throw new Error(`找不到 RAG 评测题目：${QUESTION_FILE}`)
   }
@@ -22,28 +26,18 @@ function readQuestions(): Question[] {
   try {
     parsed = JSON.parse(fs.readFileSync(QUESTION_FILE, 'utf8'))
   } catch (error) {
-    throw new Error(`RAG 评测题目不是合法 JSON：${QUESTION_FILE}（${error instanceof Error ? error.message : String(error)}）`)
-  }
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error(`RAG 评测题目必须是非空数组：${QUESTION_FILE}`)
+    throw new Error(
+      `RAG 评测题目不是合法 JSON：${QUESTION_FILE}（错误：${error instanceof Error ? error.message : String(error)}）`,
+    )
   }
 
-  return parsed.map((entry, index) => {
-    const record = (entry ?? {}) as Record<string, unknown>
-    if (typeof record.question !== 'string' || record.question.trim() === '') {
-      throw new Error(`RAG 评测题目第 ${index + 1} 项的 question 必须是非空字符串`)
-    }
-    if (typeof record.expectedClause !== 'string' || record.expectedClause.trim() === '') {
-      throw new Error(`RAG 评测题目第 ${index + 1} 项的 expectedClause 必须是非空字符串`)
-    }
-    return { question: record.question.trim(), expectedClause: record.expectedClause.trim() }
-  })
+  return parseRagQuestions(parsed)
 }
 
-// Clause numbers are only unique within a standard, so a hit must match the
+// Clause numbers are only unique within a standard, so every match uses the
 // full standardNo + clauseNo key.
 function clauseKey(standardNo: string, clauseNo: string): string {
-  return JSON.stringify([standardNo, clauseNo])
+  return `${standardNo}#${clauseNo}`
 }
 
 async function main() {
@@ -78,24 +72,14 @@ async function main() {
     )
   }
 
-  const expectedKeys = new Map<string, Set<string>>()
-  for (const row of clauseRows) {
-    const keys = expectedKeys.get(row.clauseNo) ?? new Set<string>()
-    keys.add(clauseKey(row.standardNo, row.clauseNo))
-    expectedKeys.set(row.clauseNo, keys)
-  }
+  const allKeys = new Set(clauseRows.map(row => clauseKey(row.standardNo, row.clauseNo)))
   for (const [index, item] of questions.entries()) {
-    const keys = expectedKeys.get(item.expectedClause)
-    if (!keys) {
+    if (!item.expectedStandardNo || !item.expectedClause) continue
+    const key = clauseKey(item.expectedStandardNo, item.expectedClause)
+    if (!allKeys.has(key)) {
       throw new Error(
-        `RAG 评测题目第 ${index + 1} 题的 expectedClause "${item.expectedClause}" 不在知识库中。` +
-          '请检查 tests/eval/rag-questions.json 与已 ingest 的语料（先运行 npm run db:push，再运行 npm run ingest）。',
-      )
-    }
-    if (keys.size > 1) {
-      throw new Error(
-        `RAG 评测题目第 ${index + 1} 题的 expectedClause "${item.expectedClause}" 在知识库中对应多个标准，` +
-          '无法按 standardNo + clauseNo 唯一匹配。请只 ingest 评测所用的语料，或先消除标准冲突。',
+        `RAG 评测题目第 ${index + 1} 题的期望条款 ${item.expectedStandardNo} ${item.expectedClause} 不在知识库中。` +
+          '请检查 tests/eval/rag-questions.json 与已 ingest 的语料。',
       )
     }
   }
@@ -106,8 +90,18 @@ async function main() {
     reranker: new DashScopeReranker(apiKey),
   }
 
-  let hits = 0
-  const details: { question: string; expected: string; hit: boolean; retrieved: string[] }[] = []
+  const scored: RagScoredItem[] = []
+  const details: {
+    question: string
+    expected: string | null
+    expectNoEvidence: boolean
+    noEvidence: boolean
+    reranked: boolean
+    hit: boolean
+    retrieved: string[]
+    scores: number[]
+  }[] = []
+
   for (const [index, item] of questions.entries()) {
     let result
     try {
@@ -118,25 +112,55 @@ async function main() {
           (error instanceof Error ? error.message : String(error)),
       )
     }
-    const expected = expectedKeys.get(item.expectedClause)!
-    const hit = result.clauses.some(clause => expected.has(clauseKey(clause.standardNo, clause.clauseNo)))
-    if (hit) hits++
+
+    const expectedKey = item.expectedStandardNo && item.expectedClause
+      ? clauseKey(item.expectedStandardNo, item.expectedClause)
+      : null
+    const retrievedKeys = result.clauses.map(clause => clauseKey(clause.standardNo, clause.clauseNo))
+    const hit = expectedKey === null
+      ? result.noEvidence
+      : retrievedKeys.includes(expectedKey)
+
+    scored.push({ expectedKey, retrievedKeys, noEvidence: result.noEvidence })
     details.push({
       question: item.question,
-      expected: item.expectedClause,
+      expected: expectedKey,
+      expectNoEvidence: item.expectNoEvidence,
+      noEvidence: result.noEvidence,
+      reranked: result.reranked,
       hit,
       retrieved: result.clauses.map(clause => `${clause.standardNo} ${clause.clauseNo}`),
+      scores: result.clauses.map(clause => round(clause.score)),
     })
   }
 
+  const score = scoreRag(scored)
   const rag = {
-    recallAt5: round(hits / questions.length),
-    total: questions.length,
+    recallAt5: round(score.recallAt5),
+    recallAt3: round(score.recallAt3),
+    mrr: round(score.mrr),
+    noAnswerAccuracy: round(score.noAnswerAccuracy),
+    total: score.total,
+    answerableTotal: score.answerableTotal,
+    noAnswerTotal: score.noAnswerTotal,
+    rerankThreshold: DEFAULT_RERANK_MIN_SCORE,
+    hybridThreshold: DEFAULT_HYBRID_MIN_SCORE,
+    rerankerFallbacks: details.filter(item => !item.reranked).length,
     details,
   }
 
   writeResults('rag', rag)
-  console.log(JSON.stringify({ rag: { recallAt5: rag.recallAt5, total: rag.total } }, null, 2))
+  console.log(JSON.stringify({
+    rag: {
+      recallAt5: rag.recallAt5,
+      recallAt3: rag.recallAt3,
+      mrr: rag.mrr,
+      noAnswerAccuracy: rag.noAnswerAccuracy,
+      total: rag.total,
+      answerableTotal: rag.answerableTotal,
+      noAnswerTotal: rag.noAnswerTotal,
+    },
+  }, null, 2))
 }
 
 main().catch(error => {

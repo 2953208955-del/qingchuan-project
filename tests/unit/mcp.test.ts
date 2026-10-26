@@ -5,6 +5,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { createMcpServer, type McpDeps } from '@/mcp/server'
 import { createDb } from '@/lib/db/client'
+import { createRun, listAgentSteps, saveReport, updateRun } from '@/lib/db/repo'
 import type { Embedder } from '@/lib/rag/embed'
 import type { VisionPort } from '@/lib/vision/qwen'
 
@@ -105,15 +106,41 @@ describe('MCP server', () => {
     })
   })
 
-  it('creates a mock work order', async () => {
-    await withServer({}, async (client) => {
+  it('creates a mock work order only for a completed, exportable report', async () => {
+    const db = emptyDatabase()
+    const run = createRun(db, { instruction: '检查塑料', location: null })
+    updateRun(db, run.id, { status: 'completed' })
+    saveReport(db, {
+      id: 'r1', runId: run.id, version: 1, contentJson: '{}', status: 'draft',
+    })
+
+    await withServer({ db }, async (client) => {
       const result = await client.callTool({
         name: 'create_work_order',
-        arguments: { runId: 'run-123456789', severity: 'medium' },
+        arguments: { runId: run.id, severity: 'medium' },
       })
       expect(toolJson(result)).toEqual({
-        ticketId: 'MOCK-run-1234', severity: 'medium', mock: true,
+        ticketId: `MOCK-${run.id.slice(0, 8)}`, severity: 'medium', mock: true,
       })
+      expect(listAgentSteps(db, run.id).some(step => step.step === 'create_work_order_mcp')).toBe(true)
+    })
+  })
+
+  it('refuses a work order while the report awaits review', async () => {
+    const db = emptyDatabase()
+    const run = createRun(db, { instruction: '检查塑料', location: null })
+    updateRun(db, run.id, { status: 'awaiting_review' })
+    saveReport(db, {
+      id: 'r1', runId: run.id, version: 1, contentJson: '{}', status: 'needs_review',
+    })
+
+    await withServer({ db }, async (client) => {
+      const result = await client.callTool({
+        name: 'create_work_order',
+        arguments: { runId: run.id, severity: 'medium' },
+      })
+      expect(result.isError).toBe(true)
+      expect(listAgentSteps(db, run.id)).toHaveLength(0)
     })
   })
 

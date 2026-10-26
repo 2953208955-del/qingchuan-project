@@ -47,7 +47,7 @@ export function chunkMarkdown(
   }
 
   for (const line of lines) {
-    const match = line.match(/^##\s*(第[^\s]+条)\s*(.*)$/)
+    const match = line.match(/^##\s*(第[^\s]+条|摘编-[^\s]+)\s*(.*)$/)
     if (match) {
       flush()
       current = { clauseNo: match[1], title: match[2].trim() || match[1], body: [] }

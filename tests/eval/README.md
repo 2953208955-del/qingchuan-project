@@ -8,13 +8,13 @@
 
 - **不得编造 GT 或评测结果。** `data/eval/results.json` 只能由真实评测脚本运行生成，
   禁止手工编写、补齐或修改其中的数字。
-- **不得编造标注。** `detection-fixtures.json` 当前是空数组 `[]`，因为仓库里还没有
-  真实的带标注样本图。空夹具意味着检测指标暂时没有证据价值；在补齐真实标注之前，
-  不要发布检测数字，更不能用 dry-run 结果充当效果证据。
+- **不得编造标注。** `detection-fixtures.json` 当前包含 10 张人工标注的 NOAA 单目标
+  裁片；新增样本必须来自真实图片并逐张标注，不能用模型预测冒充 GT。结果只作为本项目
+  的小样本自查，不是公开基准。
 - **dry-run 不是效果证据。** `--dry-run` 只验证 IoU 匹配与脚本管线，使用夹具里的
   `pred` 而非模型真实输出；页面会显示「dry-run，仅验证评测管线，不作为效果证据」。
-- **RAG 问题必须可从种子语料回答。** 问题只能依据 `data/knowledge/seed-sop.md` 的内容，
-  不得引入标准中不存在的规定。
+- **RAG 问题必须可从已入库语料回答。** 问题只能依据 `data/knowledge/*.md` 中已登记
+  来源的条款；不得引入语料中不存在的规定。无答案题用于验证拒答，而不是凑召回率。
 - **Agent 场景只在真实依赖下运行。** 需要 `DASHSCOPE_API_KEY` 与
   `public/samples/sample-1.jpg`；缺少依赖时脚本应报错，而不是生成虚假结果。
 
@@ -24,15 +24,24 @@
 
 ```json
 [
-  { "question": "塑料瓶属于哪一类垃圾？", "expectedClause": "第2条" }
+  { "question": "塑料瓶属于哪一类垃圾？", "expectedStandardNo": "GB/T 19095-2019", "expectedClause": "第3.1条" },
+  { "question": "火星上的垃圾按什么标准分类？", "expectNoEvidence": true }
 ]
 ```
 
-- 数组元素：`question` 为自然语言问题，`expectedClause` 为对应的种子 SOP 条款号
-  （`第1条`–`第6条`）。
-- 当前 35 题，覆盖 `第1条`–`第6条`，措辞包含多种问法；`scripts/eval-rag.ts` 用
-  `retrieveClauses` 取前 5 条，命中 `expectedClause` 记为一次 Recall@5。
-- 新增问题时请确认答案确实写在 `data/knowledge/seed-sop.md` 对应条款中。
+- 数组元素二选一：
+  - 可答题：`question` + `expectedStandardNo` + `expectedClause`；条款号只在同一标准内
+    唯一，因此必须同时写标准号。
+  - 无答案题：`question` + `expectNoEvidence: true`；用于检验系统是否拒答，不能同时
+    写期望条款。
+- 当前 60 题（50 道可答 + 10 道无答案），覆盖 `清川SOP`、`CJJ/T 174-2013`、
+  `DB31/T 1639-2025`、`GB/T 19095-2019` 四份语料。
+- `scripts/eval-rag.ts` 取前 5 条，计算 Recall@5、Recall@3、MRR 与无答案准确率；
+  四个指标分别计算，不把拒答题混进召回率分母。
+- 带 reranker 的评测阈值 `DEFAULT_RERANK_MIN_SCORE = 0.65` 是在这 60 题上校准的；
+  无 reranker 的 MCP/回退路径使用 `DEFAULT_HYBRID_MIN_SCORE = 0.45`，因为两种分数
+  不在同一尺度。结果会记录 `rerankThreshold`、`hybridThreshold`、`rerankerFallbacks`
+  与每题分数，便于审计。这批指标属于自建小样本自查，不能当作公开基准。
 
 ### `detection-fixtures.json`
 

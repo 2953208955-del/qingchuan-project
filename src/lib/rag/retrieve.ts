@@ -72,13 +72,26 @@ export function searchChunks(db: Db, queryEmbedding: number[], queryText: string
     .slice(0, k)
 }
 
+// Reranked scores are calibrated on the expanded corpus: answerable questions
+// scored >= 0.806 and no-answer probes <= 0.600, so 0.65 keeps a margin on both
+// sides. Hybrid (no-reranker) scores are on a different scale; MCP and reranker
+// outages use the lower threshold instead of silently discarding answers.
+export const DEFAULT_RERANK_MIN_SCORE = 0.65
+export const DEFAULT_HYBRID_MIN_SCORE = 0.45
+
+export interface RetrievalResult {
+  clauses: Clause[]
+  noEvidence: boolean
+  reranked: boolean
+}
+
 export async function retrieveClauses(
   deps: { db: Db; embedder: Embedder; reranker?: Reranker },
   query: string,
   categories: DebrisCategory[],
   topK = 5,
-  minScore = 0.25,
-): Promise<{ clauses: Clause[]; noEvidence: boolean }> {
+  minScore?: number,
+): Promise<RetrievalResult> {
   const [embedding] = await deps.embedder.embed([expandQuery(query)])
   // Filter by category before truncating the pre-rerank pool: an eligible
   // clause must not be dropped just because many irrelevant categories rank
@@ -92,26 +105,31 @@ export async function retrieveClauses(
     )
     .slice(0, 20)
 
+  let reranked = false
   if (deps.reranker && hits.length > 0) {
     try {
       const ranked = await deps.reranker.rerank(query, hits.map(h => h.content), Math.min(10, hits.length))
-      if (ranked.length === 0) return { clauses: [], noEvidence: true }
+      if (ranked.length === 0) return { clauses: [], noEvidence: true, reranked: true }
       hits = ranked
         .filter(r => hits[r.index])
         .map(r => ({ ...hits[r.index], score: r.score }))
         .sort((a, b) => b.score - a.score)
+      reranked = true
     } catch {
-      // Reranker outage (HTTP/network): fall back to the hybrid hits.
+      // Reranker outage (HTTP/network): fall back to the hybrid hits and use
+      // the hybrid threshold, not the stricter rerank threshold.
     }
   }
 
-  const kept = hits.filter(h => h.score >= minScore).slice(0, topK)
-  if (kept.length === 0) return { clauses: [], noEvidence: true }
+  const threshold = minScore ?? (reranked ? DEFAULT_RERANK_MIN_SCORE : DEFAULT_HYBRID_MIN_SCORE)
+  const kept = hits.filter(h => h.score >= threshold).slice(0, topK)
+  if (kept.length === 0) return { clauses: [], noEvidence: true, reranked }
   return {
     clauses: kept.map(h => ({
       id: h.id, standardNo: h.standardNo, clauseNo: h.clauseNo,
       title: h.title, content: h.content, score: h.score,
     })),
     noEvidence: false,
+    reranked,
   }
 }

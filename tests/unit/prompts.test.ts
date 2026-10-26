@@ -27,6 +27,8 @@ describe('prompts', () => {
   it('defines the planner soft-focus contract', () => {
     expect(PLANNER_PROMPT).toContain('focusCategories')
     expect(PLANNER_PROMPT).toContain('其他类别仍会识别并保留')
+    expect(PLANNER_PROMPT).toContain('get_river_profile')
+    expect(PLANNER_PROMPT).toContain('create_work_order')
   })
 
   it('requires evidence in the reporter prompt', () => {
