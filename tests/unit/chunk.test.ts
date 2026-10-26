@@ -17,6 +17,15 @@ describe('chunkMarkdown', () => {
     expect(chunks[1].content).toContain('塑料瓶')
   })
 
+  it('accepts excerpt ids for clauses that are not official clause numbers', () => {
+    const chunks = chunkMarkdown(
+      '## 摘编-CJJ-4.0.2 保洁等级\n按水域重要性分级。',
+      { standardNo: 'CJJ/T 174-2013', documentId: 'cjj', title: '摘编' },
+    )
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0].clauseNo).toBe('摘编-CJJ-4.0.2')
+  })
+
   it('keeps category tags from content', () => {
     const chunks = chunkMarkdown(md, { standardNo: '清川SOP', documentId: 'doc1', title: '巡检 SOP' })
     expect(chunks[1].categoryTags).toContain('plastic_bottle')

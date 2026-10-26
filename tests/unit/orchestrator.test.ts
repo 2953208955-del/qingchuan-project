@@ -111,6 +111,154 @@ describe('runInspection', () => {
     expect(status).toBe('awaiting_review')
   })
 
+  it('executes a planner-selected river profile tool before vision', async () => {
+    const { db, runId } = setup()
+    repo.updateRun(db, runId, {
+      planJson: JSON.stringify({
+        imageCount: 1, focusCategories: [], intentSummary: '查河段档案', steps: [],
+        tools: ['get_river_profile'], parsedBy: 'heuristic',
+        estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report',
+      }),
+    })
+    const order: string[] = []
+    const tools = {
+      getRiverProfile: vi.fn(async () => {
+        order.push('profile')
+        return { riverId: runId, name: '示例河段', lengthKm: 3.2, mock: true }
+      }),
+      createWorkOrder: vi.fn(),
+    }
+    const d = deps(db, {
+      tools,
+      vision: {
+        analyze: async () => {
+          order.push('vision')
+          return {
+            detections: [{
+              category: 'plastic_bottle' as const, material: null, confidence: 0.9,
+              bbox: null, description: '',
+            }],
+            abstained: false,
+            usage: { inputTokens: 1, outputTokens: 1 },
+          }
+        },
+      },
+    })
+
+    const status = await runInspection(runId, d as never)
+
+    expect(status).toBe('completed')
+    expect(tools.getRiverProfile).toHaveBeenCalledWith({ riverId: runId })
+    expect(order).toEqual(['profile', 'vision'])
+    expect(repo.listAgentSteps(db, runId).some(
+      step => step.step === 'get_river_profile' && step.status === 'done',
+    )).toBe(true)
+  })
+
+  it('executes a planner-selected work order tool after the report', async () => {
+    const { db, runId } = setup()
+    repo.updateRun(db, runId, {
+      planJson: JSON.stringify({
+        imageCount: 1, focusCategories: [], intentSummary: '生成整改工单', steps: [],
+        tools: ['create_work_order'], parsedBy: 'heuristic',
+        estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report',
+      }),
+    })
+    const tools = {
+      getRiverProfile: vi.fn(),
+      createWorkOrder: vi.fn(async ({ severity }: { severity: 'low' | 'medium' | 'high' }) => ({
+        ticketId: 'MOCK-ticket', severity, mock: true,
+      })),
+    }
+
+    const status = await runInspection(runId, deps(db, { tools }) as never)
+
+    expect(status).toBe('completed')
+    expect(tools.createWorkOrder).toHaveBeenCalledWith({ runId, severity: 'low' })
+    expect(tools.getRiverProfile).not.toHaveBeenCalled()
+    const step = repo.listAgentSteps(db, runId).find(item => item.step === 'create_work_order')
+    expect(step).toMatchObject({ status: 'done' })
+    expect(step?.detail).toContain('MOCK-ticket')
+  })
+
+  it('does not fail the inspection when an optional tool errors', async () => {
+    const { db, runId } = setup()
+    repo.updateRun(db, runId, {
+      planJson: JSON.stringify({
+        imageCount: 1, focusCategories: [], intentSummary: '查河段档案', steps: [],
+        tools: ['get_river_profile'], parsedBy: 'heuristic',
+        estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report',
+      }),
+    })
+    const tools = {
+      getRiverProfile: vi.fn(async () => { throw new Error('profile down') }),
+      createWorkOrder: vi.fn(),
+    }
+
+    const status = await runInspection(runId, deps(db, { tools }) as never)
+
+    expect(status).toBe('completed')
+    const step = repo.listAgentSteps(db, runId).find(item => item.step === 'get_river_profile')
+    expect(step).toMatchObject({ status: 'error' })
+    expect(step?.error).toContain('profile down')
+  })
+
+  it('defers a selected work order while the report awaits human review', async () => {
+    const { db, runId } = setup()
+    repo.updateRun(db, runId, {
+      planJson: JSON.stringify({
+        imageCount: 1, focusCategories: [], intentSummary: '生成整改工单', steps: [],
+        tools: ['create_work_order'], parsedBy: 'heuristic',
+        estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report',
+      }),
+    })
+    const tools = {
+      getRiverProfile: vi.fn(),
+      createWorkOrder: vi.fn(async () => ({
+        ticketId: 'MOCK-ticket', severity: 'low' as const, mock: true,
+      })),
+    }
+    const d = deps(db, {
+      tools,
+      vision: {
+        analyze: async () => ({
+          detections: [{
+            category: 'plastic_bottle' as const, material: null, confidence: 0.3,
+            bbox: null, description: '',
+          }],
+          abstained: false,
+          usage: { inputTokens: 1, outputTokens: 1 },
+        }),
+      },
+    })
+
+    const status = await runInspection(runId, d as never)
+
+    expect(status).toBe('awaiting_review')
+    expect(tools.createWorkOrder).not.toHaveBeenCalled()
+    const step = repo.listAgentSteps(db, runId).find(item => item.step === 'create_work_order')
+    expect(step).toMatchObject({ status: 'skipped' })
+    expect(step?.detail).toContain('人工复核')
+  })
+
+  it('does not call optional tools when the stored plan selected none', async () => {
+    const { db, runId } = setup()
+    repo.updateRun(db, runId, {
+      planJson: JSON.stringify({
+        imageCount: 1, focusCategories: [], intentSummary: '', steps: [],
+        tools: [], parsedBy: 'heuristic',
+        estimatedSeconds: 5, estimatedCostCny: 0.02, output: 'inspection_report',
+      }),
+    })
+    const tools = { getRiverProfile: vi.fn(), createWorkOrder: vi.fn() }
+
+    const status = await runInspection(runId, deps(db, { tools }) as never)
+
+    expect(status).toBe('completed')
+    expect(tools.getRiverProfile).not.toHaveBeenCalled()
+    expect(tools.createWorkOrder).not.toHaveBeenCalled()
+  })
+
   it('passes the persisted focus categories and instruction hint to the vision model', async () => {
     const { db, runId } = setup()
     repo.updateRun(db, runId, { focusCategories: JSON.stringify(['plastic_bag']) })

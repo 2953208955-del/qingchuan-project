@@ -154,8 +154,9 @@ describe('computeSeverityTool', () => {
 describe('createWorkOrderTool', () => {
   it('returns a mock ticket with the run id prefix', async () => {
     const result = await createWorkOrderTool({ runId: 'abcdef1234567890', severity: 'high' })
-    expect(result.mock).toBe(true)
-    expect(result.ticketId.startsWith('MOCK-abcdef12-')).toBe(true)
+    expect(result).toMatchObject({
+      ticketId: 'MOCK-abcdef12', severity: 'high', mock: true,
+    })
   })
 })
 

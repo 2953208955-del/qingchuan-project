@@ -6,6 +6,7 @@ export const runs = sqliteTable('runs', {
   instruction: text('instruction').notNull(),
   location: text('location'),
   focusCategories: text('focus_categories').notNull().default('[]'),
+  planJson: text('plan_json'),
   promptVersion: text('prompt_version'),
   totalCostCny: real('total_cost_cny').notNull().default(0),
   error: text('error'),

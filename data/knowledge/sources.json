@@ -1,0 +1,29 @@
+{
+  "seed-sop.md": {
+    "standardNo": "清川SOP",
+    "title": "清川河湖垃圾巡检 SOP",
+    "version": "2026-10",
+    "note": "项目自编现场作业规范；用于严重度、证据、整改与报告要求。"
+  },
+  "cjjt174-2013.md": {
+    "standardNo": "CJJ/T 174-2013",
+    "title": "城市水域保洁作业及质量标准",
+    "version": "2013（现行）",
+    "sourceUrl": "http://ebook.chinabuilding.com.cn/zbooklib/book/detail/show?bookID=58376&SiteID=1",
+    "note": "住房和城乡建设部行业标准；本文件为公开条款/章节摘编，非逐字全文。"
+  },
+  "db31-t1639-2025.md": {
+    "standardNo": "DB31/T 1639-2025",
+    "title": "河湖维修养护技术要求",
+    "version": "2025（2026-04-01 实施）",
+    "sourceUrl": "https://ba.sacinfo.org.cn/portal/download/aabeeedd179174c23e6f502ab77ad51d33480bdfa784da95fef7854ba35080d0",
+    "note": "上海市地方标准；本文件为公开章节/附录摘编，非逐字全文。"
+  },
+  "gbt19095-2019.md": {
+    "standardNo": "GB/T 19095-2019",
+    "title": "生活垃圾分类标志",
+    "version": "2019（现行）",
+    "sourceUrl": "https://zjjcmspublic.oss-cn-hangzhou-zwynet-d01-a.internet.cloud.zj.gov.cn/jcms_files/jcms1/web3549/site/attach/0/e6338461f0da4f48955842fc3dcbb4aa.pdf",
+    "note": "国家标准；本文件为公开条款摘编，非逐字全文。"
+  }
+}

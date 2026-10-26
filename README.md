@@ -9,7 +9,7 @@
 1. **拍照即巡检，门槛低。** 不需要专业设备或本地 GPU：手机/无人机照片 + 一句话指令即可产出结构化巡检结果，普通浏览器就能使用。
 2. **结论可追溯，敢用于整改。** 报告中的每条结论都绑定原图识别框、置信度与标准条款；低置信目标自动进入人工复核队列，Verifier 校验证据与数字一致性。
 3. **从识别到报告闭环。** 识别、严重度计算、标准检索、报告生成、复核纠错、PDF 导出和 MCP 工单集成在同一条流程里，减少重复整理材料的时间。
-4. **计划可确认，关注不丢证据。** Planner 把一句话解析为关注类别与五步执行计划，用户确认后才开始分析；关注类别只是视觉提示，其他类别仍会识别、统计并进入复核。
+4. **计划可确认，关注不丢证据。** Planner 把一句话解析为关注类别与五步执行计划，用户确认后才开始分析；关注类别只是视觉提示，其他类别仍会识别、统计并进入复核。指令明确要求时，Planner 还会选择河段档案或整改工单工具，由 orchestrator 实际调用并写入时间线与审计（当前工具为 mock，界面标注示意）；工单只在报告完成且无待复核项时创建，否则标记为待人工复核。
 
 ## 功能截图
 
@@ -27,11 +27,13 @@ flowchart TB
   ORCH --> VER["Verifier<br/>证据 / 数字一致性校验"]
   ORCH --> DB[("SQLite<br/>任务 / 识别 / 证据 / 知识库")]
   ORCH --> FS[("本地文件<br/>DATA_DIR/uploads")]
+  ORCH --> TOOLS["共享工具实现<br/>河段档案 / 整改工单"]
   RAG --> DB
   API --> MCP["MCP Server（stdio）"]
+  MCP --> TOOLS
 ```
 
-- 编排采用确定性状态机 + LLM 决策点，每一步写入 `agent_steps`，记录耗时、费用与错误，可审计、可复现。
+- 编排采用确定性状态机 + LLM 解析/决策点（关注类别、可选工具），每一步写入 `agent_steps`，记录耗时、费用与错误，可审计、可复现。
 - 严重度、证据匹配等关键计算是纯 TypeScript 代码，模型不直接决定最终数字。
 - 所有推理调用云端 API；本地只需要 Node.js 和 SQLite 文件，不需要 GPU、Docker 或 WSL。
 - 图片与数据库落在本地 `DATA_DIR`，由应用直接读取；知识库向量在进程内做余弦相似度检索，无需向量数据库。
@@ -50,7 +52,7 @@ qingchuan/
 ├─ src/mcp/            MCP Server（复用应用工具层）
 ├─ scripts/            知识库入库、演示种子、评测、MCP 启动
 ├─ deploy/             PM2 / Nginx 配置与部署说明
-├─ data/               SQLite、上传图片、知识库源文件（运行时生成）
+├─ data/               SQLite、上传图片（运行时）；knowledge/ 知识库源文件（版本化）
 ├─ public/samples/     演示样例图（需自行补齐，见目录内 README）
 ├─ tests/              单元测试、E2E 与评测夹具
 └─ docs/               设计与交付文档
@@ -109,7 +111,7 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 | `npm run ingest` | 将 `data/knowledge/*.md` 入库并生成向量 |
 | `npm run seed` | 写入演示任务、识别与报告（需样例图） |
 | `npm run eval:detection` | 检测评测（GT 匹配 P/R/F1，`-- --dry-run` 仅验证管线） |
-| `npm run eval:rag` | RAG 检索评测（Recall@5） |
+| `npm run eval:rag` | RAG 检索评测（Recall@5 / Recall@3 / MRR / 无答案准确率） |
 | `npm run eval:agent` | Agent 场景评测（真实依赖，无 dry-run） |
 | `npm run mcp` | 以 stdio 启动 MCP Server（等价于 `npx tsx scripts/run-mcp.ts`） |
 
@@ -127,17 +129,28 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 
 完整步骤、备份脚本与 MCP 配置见 [deploy/README.md](deploy/README.md)。
 
+### 知识库语料（2026-10-26）
+
+知识库从 6 条种子 SOP 扩到 **39 条**：
+
+- `清川SOP` 6 条（项目自编现场作业规范）。
+- `CJJ/T 174-2013` 15 条（城市水域保洁作业及质量标准，摘编）。
+- `DB31/T 1639-2025` 10 条（河湖维修养护技术要求，摘编）。
+- `GB/T 19095-2019` 8 条（生活垃圾分类标志，摘编）。
+
+来源、版本与链接记录在 `data/knowledge/sources.json`；外部标准均为公开条款/章节摘编，逐条注明来源，**非逐字全文**。能核实为官方条款号的标注为“第 X 条/表”，其余使用 `摘编-标准-章节-主题` 稳定标识，避免冒充官方条款号。`DB4401/T 4-2018` 因已于 2024-07-01 废止，未纳入语料。
+
 ## 评测方法
 
 评测以**可复现、可核对**为原则，脚本位于 `scripts/eval-*.ts`，结果只由脚本写入 `data/eval/results.json`，并在 `/eval` 页面展示。
 
 - **检测**：对每张带人工 GT 的图片，在 IoU ≥ 0.5 下做类别匹配，统计 TP/FP/FN，计算 Precision、Recall、F1；无法定位的预测计为 FP。`--dry-run` 只用夹具里的模拟预测验证匹配管线，**不是效果证据**，不得用于对外宣称模型指标。
-- **RAG**：对固定问题集检索前 5 条条款，统计命中期望条款的 Recall@5。
+- **RAG**：对固定问题集检索前 5 条条款，分别统计 Recall@5、Recall@3、MRR；另用无答案题统计拒答准确率。各指标分母分开，不把拒答题混进召回率。
 - **Agent**：在真实视觉/检索/生成依赖下跑正常、低置信、无知识依据、提示注入四类场景，统计最终状态成功率与平均耗时。
 
-`data/eval/results.json` 只能由真实评测运行生成，禁止手工编写或补数字。当前文件来自 2026-10-24 的真实云端运行：
+`data/eval/results.json` 只能由真实评测运行生成，禁止手工编写或补数字。当前文件包含多段真实云端运行（RAG 2026-10-26；Agent/检测 2026-10-24）：
 
-- **RAG**：Recall@5 = **1.00**（35 题全部命中期望条款）。
+- **RAG**：**60 题**（50 道可答 + 10 道无答案）；Recall@5 **1.00**、Recall@3 **1.00**、MRR **0.97**、无答案准确率 **1.00**。带 reranker 的评测阈值 `0.65`、无 reranker 的 MCP/回退路径阈值 `0.45`，均在同一题集上校准，属于自建小样本自查，不构成公开基准。RAG 段更新于 2026-10-26；Agent/检测段仍为 2026-10-24。
 - **Agent**：成功率 **4/4（100%）**，平均耗时约 21.9 秒（单次真实运行，2026-10-24）。场景使用不同样例图：`normal` / `no-evidence` 用 `sample-2.jpg`（无低置信目标），`low-confidence` 用 `sample-1.jpg`（含 <0.5 目标），`injection` 在读取图片前即被拒绝。模型输出具有随机性，换一次运行的具体结果可能不同；复核 → 重新生成 → 导出的闭环另有单元测试与 E2E 覆盖。
 - **检测**：10 张 NOAA 公有领域单目标裁片，人工标注 GT，真实 VLM 运行：Precision **0.78**、Recall **0.50**、F1 **0.61**（IoU ≥ 0.5，类别感知）。这是小样本自查，不是大规模基准；GT 为人工粗框，结果不宜与公开数据集的 mAP/F1 直接比较。
 
@@ -153,9 +166,10 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 ## 提交状态（2026-10-26）
 
 - 本地分支见 `git branch --show-current`；未配置 remote、未推送、未建 tag（最新提交见 `git log -1`）。
-- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**46 文件 / 356 单测**、Playwright **7/7** 全绿。
+- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**51 文件 / 391 单测**、Playwright **7/7** 全绿。
 - 任务解析：DeepSeek Planner + 关键词回退；五步计划可确认；关注类别为软提示，检索使用“关注类别 ∪ 实际检出类别”。
-- 真实评测：RAG Recall@5 **1.00**（35/35）；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
+- 可选工具：Planner 按指令选择 `get_river_profile` / `create_work_order`，orchestrator 真实执行并写入 `agent_steps` 与时间线；MCP Server 复用同一工具实现。
+- 真实评测：RAG **60 题**（50 可答 + 10 无答案），Recall@5 **1.00**、Recall@3 **1.00**、MRR **0.97**、无答案准确率 **1.00**；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
 - 待完成：5–8 分钟视频、≤30 页 PDF、公开仓库与演示地址、团队信息；11/14 冻结后再建 tag。
 - 详见 [提交检查清单](docs/submission-checklist.md)。
 

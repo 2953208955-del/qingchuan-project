@@ -29,10 +29,10 @@ describe('ingestMarkdown', () => {
     const md = seedMarkdown()
 
     const first = await ingestMarkdown(db, fakeEmbedder, seedInput(md))
-    expect(first).toEqual({ inserted: 6, replaced: 0 })
+    expect(first).toEqual({ inserted: 6, replaced: 0, removed: 0 })
 
     const second = await ingestMarkdown(db, fakeEmbedder, seedInput(md))
-    expect(second).toEqual({ inserted: 0, replaced: 0 })
+    expect(second).toEqual({ inserted: 0, replaced: 0, removed: 0 })
     expect(db.select().from(clauses).all()).toHaveLength(6)
   })
 
@@ -48,12 +48,25 @@ describe('ingestMarkdown', () => {
     expect(changed).not.toBe(original)
 
     const result = await ingestMarkdown(db, fakeEmbedder, seedInput(changed))
-    expect(result).toEqual({ inserted: 0, replaced: 1 })
+    expect(result).toEqual({ inserted: 0, replaced: 1, removed: 0 })
 
     const rows = db.select().from(clauses).all()
     expect(rows).toHaveLength(6)
     const clause2 = rows.find(row => row.clauseNo === '第2条')
     expect(clause2?.content).toContain('但需单独记录')
+  })
+
+  it('removes clauses that were deleted or renumbered', async () => {
+    const db = freshDb()
+    const firstMd = '## 第1条 甲\n内容一\n\n## 第2条 乙\n内容二'
+    const secondMd = '## 第1条 甲\n内容一\n\n## 第3条 丙\n内容三'
+
+    await ingestMarkdown(db, fakeEmbedder, seedInput(firstMd))
+    const result = await ingestMarkdown(db, fakeEmbedder, seedInput(secondMd))
+
+    expect(result).toEqual({ inserted: 1, replaced: 0, removed: 1 })
+    const rows = db.select().from(clauses).all()
+    expect(rows.map(row => row.clauseNo).sort()).toEqual(['第1条', '第3条'])
   })
 
   it('throws IngestError for duplicate clauseNo and writes nothing', async () => {

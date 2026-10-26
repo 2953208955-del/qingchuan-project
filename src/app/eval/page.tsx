@@ -2,15 +2,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { HoloBadge } from '@/components/holo/holo-badge'
 import { HoloPanel } from '@/components/holo/holo-panel'
+import { parseRagResults, type RagResults } from '@/lib/eval/rag-results'
 
 export const dynamic = 'force-dynamic'
 
 type DetectionResults = { precision: number; recall: number; f1: number; images: number; mode: string }
-type RagResults = { recallAt5: number; total: number }
 type AgentResults = { successRate: number; avgLatencyMs: number }
 
 type Results = {
   generatedAt: string | null
+  sectionUpdatedAt: Record<string, string>
   detection: DetectionResults | null
   rag: RagResults | null
   agent: AgentResults | null
@@ -18,7 +19,9 @@ type Results = {
 
 const COMMANDS = ['npm run eval:detection', 'npm run eval:rag', 'npm run eval:agent']
 
-const isEmpty: Results = { generatedAt: null, detection: null, rag: null, agent: null }
+const isEmpty: Results = {
+  generatedAt: null, sectionUpdatedAt: {}, detection: null, rag: null, agent: null,
+}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -37,11 +40,6 @@ function parseDetection(value: unknown): DetectionResults | null {
   return { precision: record.precision, recall: record.recall, f1: record.f1, images: record.images, mode: record.mode }
 }
 
-function parseRag(value: unknown): RagResults | null {
-  const record = asRecord(value)
-  if (!record || !isNumber(record.recallAt5) || !isNumber(record.total)) return null
-  return { recallAt5: record.recallAt5, total: record.total }
-}
 
 function parseAgent(value: unknown): AgentResults | null {
   const record = asRecord(value)
@@ -57,15 +55,32 @@ function loadResults(): Results {
     if (!fs.existsSync(file)) return isEmpty
     const raw = asRecord(JSON.parse(fs.readFileSync(file, 'utf8')))
     if (!raw) return isEmpty
+    const updated = asRecord(raw.sectionUpdatedAt)
+    const sectionUpdatedAt: Record<string, string> = {}
+    if (updated) {
+      for (const [key, value] of Object.entries(updated)) {
+        if (isString(value)) sectionUpdatedAt[key] = value
+      }
+    }
     return {
       generatedAt: isString(raw.generatedAt) ? raw.generatedAt : null,
+      sectionUpdatedAt,
       detection: parseDetection(raw.detection),
-      rag: parseRag(raw.rag),
+      rag: parseRagResults(raw.rag),
       agent: parseAgent(raw.agent),
     }
   } catch {
     return isEmpty
   }
+}
+
+function UpdatedAt({ value }: { value?: string }) {
+  if (!value) return null
+  return (
+    <p className="eval-generated">
+      更新：<time dateTime={value}>{value}</time>
+    </p>
+  )
 }
 
 function Metric({ label, value, unit }: { label: string; value: string; unit?: string }) {
@@ -93,7 +108,14 @@ export default function EvalPage() {
 
       {results.generatedAt && (
         <p className="eval-generated">
-          生成时间：<time dateTime={results.generatedAt}>{results.generatedAt}</time>
+          最后更新：<time dateTime={results.generatedAt}>{results.generatedAt}</time>
+        </p>
+      )}
+
+      {results.rag && (
+        <p className="eval-generated">
+          RAG 为自建 {results.rag.total} 题自查；rerank 阈值 0.65、无 reranker 0.45，
+          阈值在同一题集上校准，不作为公开基准。
         </p>
       )}
 
@@ -121,6 +143,7 @@ export default function EvalPage() {
               }
               className="eval-panel eval-panel--detection"
             >
+              <UpdatedAt value={results.sectionUpdatedAt.detection} />
               {results.detection.mode === 'dry-run' && (
                 <p role="alert" className="eval-dry-run">
                   dry-run，仅验证评测管线，不作为效果证据
@@ -137,17 +160,30 @@ export default function EvalPage() {
           {results.rag && (
             <HoloPanel
               title="RAG"
-              subtitle={`${results.rag.total} 题`}
+              subtitle={
+                results.rag.answerableTotal > 0
+                  ? `${results.rag.total} 题 · 可答 ${results.rag.answerableTotal} / 无答案 ${results.rag.noAnswerTotal}`
+                  : `${results.rag.total} 题`
+              }
               className="eval-panel"
             >
+              <UpdatedAt value={results.sectionUpdatedAt.rag} />
               <div className="eval-metrics">
                 <Metric label="Recall@5" value={results.rag.recallAt5.toFixed(3)} />
+                <Metric label="Recall@3" value={results.rag.recallAt3.toFixed(3)} />
+                <Metric label="MRR" value={results.rag.mrr.toFixed(3)} />
+                <Metric
+                  label="无答案准确率"
+                  value={(results.rag.noAnswerAccuracy * 100).toFixed(1)}
+                  unit="%"
+                />
               </div>
             </HoloPanel>
           )}
 
           {results.agent && (
             <HoloPanel title="Agent" className="eval-panel">
+              <UpdatedAt value={results.sectionUpdatedAt.agent} />
               <div className="eval-metrics">
                 <Metric label="成功率" value={results.agent.successRate.toFixed(3)} />
                 <Metric label="平均延迟" value={String(Math.round(results.agent.avgLatencyMs))} unit="ms" />

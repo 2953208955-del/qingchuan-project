@@ -3,6 +3,7 @@ import type { Clause, DebrisCategory, Detection, ReportDraft } from '@/lib/domai
 import type { EvidenceIndex, VerifyIssue } from '@/lib/domain/evidence'
 import type { VisionPort } from '@/lib/vision/qwen'
 import type { BudgetTracker } from '@/lib/ai/budget'
+import type { InspectionTools } from './tool-registry'
 
 export interface RetrievalPort {
   retrieve(query: string, categories: DebrisCategory[]): Promise<{ clauses: Clause[]; noEvidence: boolean }>
@@ -43,6 +44,7 @@ export interface OrchestratorDeps {
   reporter: ReporterPort
   verifier: VerifierPort
   budget: BudgetTracker
+  tools?: InspectionTools
   emit: (event: AgentEvent) => void
   now: () => Date
 }

@@ -2,9 +2,136 @@ import pLimit from 'p-limit'
 import { scanForInjection } from '@/lib/safety/injection'
 import { BudgetExceededError, estimateCostCny } from '@/lib/ai/budget'
 import { getVisionModelId } from '@/lib/ai/providers'
-import type { Detection, RunStatus } from '@/lib/domain/schemas'
-import type { OrchestratorDeps } from './types'
+import { Plan as PlanSchema, type Detection, type RunStatus } from '@/lib/domain/schemas'
+import type { AgentEvent, OrchestratorDeps } from './types'
 import { finalizeReport, parseFocusCategories } from './report-pipeline'
+
+function parseStoredPlan(raw: string | null) {
+  if (!raw) return null
+  try {
+    const parsed = PlanSchema.safeParse(JSON.parse(raw))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
+
+function addSkippedToolStep(input: {
+  db: OrchestratorDeps['db']
+  repo: OrchestratorDeps['repo']
+  runId: string
+  step: string
+  toolName: string
+  detail: string
+  emit: (event: AgentEvent) => void
+  now: () => Date
+}): void {
+  const id = crypto.randomUUID()
+  const now = input.now().getTime()
+  input.repo.addAgentStep(input.db, {
+    id,
+    runId: input.runId,
+    step: input.step,
+    status: 'skipped',
+    toolName: input.toolName,
+    inputJson: null,
+    outputJson: null,
+    detail: input.detail,
+    latencyMs: 0,
+    costCny: null,
+    error: null,
+    startedAt: now,
+    finishedAt: now,
+  })
+  input.emit({
+    type: 'step',
+    runId: input.runId,
+    step: {
+      id, step: input.step, status: 'skipped', toolName: input.toolName,
+      detail: input.detail, latencyMs: 0, costCny: null,
+    },
+  })
+}
+
+async function runOptionalToolStep<T>(input: {
+  db: OrchestratorDeps['db']
+  repo: OrchestratorDeps['repo']
+  runId: string
+  step: string
+  toolName: string
+  detail: string
+  inputJson: string | null
+  emit: (event: AgentEvent) => void
+  now: () => Date
+  execute: () => Promise<T>
+  describe: (result: T) => string
+}): Promise<T | null> {
+  const id = crypto.randomUUID()
+  const startedAt = input.now().getTime()
+  input.repo.addAgentStep(input.db, {
+    id,
+    runId: input.runId,
+    step: input.step,
+    status: 'running',
+    toolName: input.toolName,
+    inputJson: input.inputJson,
+    outputJson: null,
+    detail: input.detail,
+    latencyMs: null,
+    costCny: null,
+    error: null,
+    startedAt,
+    finishedAt: null,
+  })
+  input.emit({
+    type: 'step',
+    runId: input.runId,
+    step: {
+      id, step: input.step, status: 'running', toolName: input.toolName,
+      detail: input.detail, latencyMs: null, costCny: null,
+    },
+  })
+
+  try {
+    const result = await input.execute()
+    const latencyMs = Math.max(0, input.now().getTime() - startedAt)
+    const detail = input.describe(result)
+    input.repo.updateAgentStep(input.db, id, {
+      status: 'done',
+      outputJson: JSON.stringify(result),
+      detail,
+      latencyMs,
+      finishedAt: input.now().getTime(),
+    })
+    input.emit({
+      type: 'step',
+      runId: input.runId,
+      step: {
+        id, step: input.step, status: 'done', toolName: input.toolName,
+        detail, latencyMs, costCny: null,
+      },
+    })
+    return result
+  } catch (error) {
+    const latencyMs = Math.max(0, input.now().getTime() - startedAt)
+    const message = error instanceof Error ? error.message : String(error)
+    input.repo.updateAgentStep(input.db, id, {
+      status: 'error',
+      error: message,
+      latencyMs,
+      finishedAt: input.now().getTime(),
+    })
+    input.emit({
+      type: 'step',
+      runId: input.runId,
+      step: {
+        id, step: input.step, status: 'error', toolName: input.toolName,
+        detail: message, latencyMs, costCny: null,
+      },
+    })
+    return null
+  }
+}
 
 const MAX_CONCURRENCY = 4
 
@@ -20,6 +147,7 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
   const { db, repo } = deps
   const run = repo.getRun(db, runId)
   if (!run) throw new Error('run not found')
+  const selectedTools = new Set(parseStoredPlan(run.planJson)?.tools ?? [])
 
   const failureMessage = (error: unknown) =>
     error instanceof BudgetExceededError ? `预算超限：${error.message}` : String(error)
@@ -35,6 +163,24 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
 
   const images = repo.listImages(db, runId)
   if (images.length === 0) return fail('没有可用图片')
+
+  const tools = deps.tools
+  if (selectedTools.has('get_river_profile') && tools) {
+    const riverId = run.location ?? runId
+    await runOptionalToolStep({
+      db,
+      repo,
+      runId,
+      step: 'get_river_profile',
+      toolName: 'getRiverProfile',
+      detail: '查询河段档案',
+      inputJson: JSON.stringify({ riverId }),
+      emit: deps.emit,
+      now: deps.now,
+      execute: () => tools.getRiverProfile({ riverId }),
+      describe: profile => `${profile.name}${profile.mock ? '（示意）' : ''}`,
+    })
+  }
 
   const focusCategories = parseFocusCategories(run.focusCategories)
   repo.updateRun(db, runId, { status: 'analyzing' })
@@ -159,7 +305,7 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
   if (analyzed === 0) return fail('所有图片均识别失败')
 
   try {
-    const { status } = await finalizeReport({
+    const { status, report } = await finalizeReport({
       db,
       repo,
       run,
@@ -171,6 +317,36 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
       now: deps.now,
       budget: deps.budget,
     })
+
+    if (selectedTools.has('create_work_order') && tools) {
+      if (status === 'completed') {
+        await runOptionalToolStep({
+          db,
+          repo,
+          runId,
+          step: 'create_work_order',
+          toolName: 'createWorkOrder',
+          detail: '创建整改工单',
+          inputJson: JSON.stringify({ runId, severity: report.metrics.severity }),
+          emit: deps.emit,
+          now: deps.now,
+          execute: () => tools.createWorkOrder({ runId, severity: report.metrics.severity }),
+          describe: order => `工单 ${order.ticketId}${order.mock ? '（mock）' : ''}`,
+        })
+      } else {
+        addSkippedToolStep({
+          db,
+          repo,
+          runId,
+          step: 'create_work_order',
+          toolName: 'createWorkOrder',
+          detail: '报告待人工复核，工单暂不创建',
+          emit: deps.emit,
+          now: deps.now,
+        })
+      }
+    }
+
     deps.emit({ type: 'done', runId, status })
     return status
   } catch (error) {

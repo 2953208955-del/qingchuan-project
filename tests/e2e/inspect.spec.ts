@@ -63,6 +63,7 @@ const planPayload = {
     { key: 'draft', title: '起草报告', detail: '由文本模型起草结论；每条结论必须绑定证据' },
     { key: 'verify', title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
   ],
+  tools: ['create_work_order'],
   parsedBy: 'llm',
   estimatedSeconds: 5,
   estimatedCostCny: 0.02,
@@ -137,6 +138,7 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   await expect(planDialog).toContainText('任务理解：检查塑料垃圾')
   await expect(planDialog).toContainText('汇总与严重度')
   await expect(planDialog).toContainText('其他类别仍会识别并保留')
+  await expect(planDialog).toContainText('额外工具：整改工单')
   await expect(page.getByRole('button', { name: '计划已生成' })).toBeDisabled()
   await page.getByRole('button', { name: '开始巡检（确认执行计划）' }).click()
 

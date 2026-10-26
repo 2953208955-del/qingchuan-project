@@ -83,6 +83,7 @@ describe('PlanConfirm', () => {
       { key: 'draft' as const, title: '起草报告', detail: '由文本模型起草结论；每条结论必须绑定证据' },
       { key: 'verify' as const, title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
     ],
+    tools: ['create_work_order'] as const,
     parsedBy: 'llm' as const,
     estimatedSeconds: 10,
     estimatedCostCny: 0.04,
@@ -90,11 +91,12 @@ describe('PlanConfirm', () => {
   }
 
   it('renders the parsed task, five steps, focus note and estimates', () => {
-    render(<PlanConfirm plan={{ ...plan, focusCategories: [...plan.focusCategories] }} onConfirm={() => {}} onCancel={() => {}} />)
+    render(<PlanConfirm plan={{ ...plan, focusCategories: [...plan.focusCategories], tools: [...plan.tools] }} onConfirm={() => {}} onCancel={() => {}} />)
 
     expect(screen.getByText(/任务理解：重点检查塑料类垃圾/)).toBeInTheDocument()
     expect(screen.getByText(/重点关注：塑料瓶、泡沫塑料/)).toBeInTheDocument()
     expect(screen.getByText(/其他类别仍会识别并保留，供人工复核/)).toBeInTheDocument()
+    expect(screen.getByText(/额外工具：整改工单/)).toBeInTheDocument()
     for (const title of ['识别图片', '汇总与严重度', '检索标准条款', '起草报告', '校验与复核']) {
       expect(screen.getByText(title)).toBeInTheDocument()
     }
@@ -105,7 +107,7 @@ describe('PlanConfirm', () => {
   it('labels the heuristic fallback honestly', () => {
     render(
       <PlanConfirm
-        plan={{ ...plan, focusCategories: [], parsedBy: 'heuristic' }}
+        plan={{ ...plan, focusCategories: [], tools: [], parsedBy: 'heuristic' }}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
@@ -113,10 +115,11 @@ describe('PlanConfirm', () => {
 
     expect(screen.getByText(/规则解析/)).toBeInTheDocument()
     expect(screen.getByText(/重点关注：未指定（全部类别）/)).toBeInTheDocument()
+    expect(screen.queryByText(/额外工具：/)).not.toBeInTheDocument()
   })
 
   it('disables both actions while another plan request is running', () => {
-    render(<PlanConfirm plan={{ ...plan, focusCategories: [...plan.focusCategories] }} onConfirm={() => {}} onCancel={() => {}} disabled />)
+    render(<PlanConfirm plan={{ ...plan, focusCategories: [...plan.focusCategories], tools: [...plan.tools] }} onConfirm={() => {}} onCancel={() => {}} disabled />)
     expect(screen.getByRole('button', { name: '开始巡检（确认执行计划）' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '取消执行计划' })).toBeDisabled()
   })

@@ -11,6 +11,7 @@ export type EvalSection = 'detection' | 'rag' | 'agent'
 
 export type ResultsDocument = {
   generatedAt?: string
+  sectionUpdatedAt?: Record<string, string>
   detection?: unknown
   rag?: unknown
   agent?: unknown
@@ -48,10 +49,17 @@ export function writeResults(
   value: unknown,
   file: string = defaultResultsPath(),
 ): ResultsDocument {
+  const previous = readResults(file)
+  const previousUpdated = previous.sectionUpdatedAt
+  const sectionUpdatedAt = previousUpdated && typeof previousUpdated === 'object'
+    ? { ...previousUpdated }
+    : {}
+  const generatedAt = new Date().toISOString()
   const document: ResultsDocument = {
-    ...readResults(file),
+    ...previous,
     [section]: value,
-    generatedAt: new Date().toISOString(),
+    sectionUpdatedAt: { ...sectionUpdatedAt, [section]: generatedAt },
+    generatedAt,
   }
 
   fs.mkdirSync(path.dirname(file), { recursive: true })

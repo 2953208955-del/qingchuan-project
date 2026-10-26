@@ -96,11 +96,20 @@ export const PlanStep = z.object({
 })
 export type PlanStep = z.infer<typeof PlanStep>
 
+export const OptionalTool = z.enum(['get_river_profile', 'create_work_order'])
+export type OptionalTool = z.infer<typeof OptionalTool>
+
+export const OPTIONAL_TOOL_LABELS: Record<OptionalTool, string> = {
+  get_river_profile: '河段档案',
+  create_work_order: '整改工单',
+}
+
 export const Plan = z.object({
   imageCount: z.number().int().positive(),
   focusCategories: z.array(DebrisCategory).default([]),
   intentSummary: z.string().default(''),
   steps: z.array(PlanStep).default([]),
+  tools: z.array(OptionalTool).default([]),
   parsedBy: z.enum(['llm', 'heuristic']).default('heuristic'),
   estimatedSeconds: z.number().positive(),
   estimatedCostCny: z.number().nonnegative(),

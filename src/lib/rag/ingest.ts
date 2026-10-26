@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/lib/db/client'
 import { clauses } from '@/lib/db/schema'
 import { chunkMarkdown, type ChunkDraft } from './chunk'
@@ -21,6 +21,7 @@ export interface IngestInput {
 export interface IngestResult {
   inserted: number
   replaced: number
+  removed: number
 }
 
 type ClauseRow = typeof clauses.$inferSelect
@@ -52,6 +53,9 @@ export async function ingestMarkdown(
 
   const existing = db.select().from(clauses).where(eq(clauses.documentId, input.documentId)).all()
   const existingByClauseNo = new Map<string, ClauseRow>(existing.map(row => [row.clauseNo, row]))
+  const currentClauseNos = new Set(chunks.map(chunk => chunk.clauseNo))
+  // Renumbered or deleted clauses must not linger after re-ingestion.
+  const stale = existing.filter(row => !currentClauseNos.has(row.clauseNo))
 
   const toInsert: ChunkDraft[] = []
   const toReplace: { chunk: ChunkDraft; row: ClauseRow }[] = []
@@ -84,6 +88,15 @@ export async function ingestMarkdown(
   const replaceEmbeddings = embeddings.slice(toInsert.length)
 
   db.transaction(tx => {
+    if (stale.length > 0) {
+      tx.delete(clauses)
+        .where(and(
+          eq(clauses.documentId, input.documentId),
+          inArray(clauses.clauseNo, stale.map(row => row.clauseNo)),
+        ))
+        .run()
+    }
+
     if (toInsert.length > 0) {
       tx.insert(clauses)
         .values(
@@ -115,5 +128,5 @@ export async function ingestMarkdown(
     })
   })
 
-  return { inserted: toInsert.length, replaced: toReplace.length }
+  return { inserted: toInsert.length, replaced: toReplace.length, removed: stale.length }
 }

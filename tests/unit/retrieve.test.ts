@@ -117,6 +117,33 @@ describe('retrieval', () => {
     expect(result.clauses.map(c => c.score)).toEqual([0.99, 0.4])
   })
 
+  it('uses the calibrated default threshold for weak rerank matches', async () => {
+    const db = dbWithChunks()
+    const weak = { rerank: async () => [{ index: 0, score: 0.6 }] }
+    const strong = { rerank: async () => [{ index: 0, score: 0.8 }] }
+
+    const rejected = await retrieveClauses({ db, embedder: fakeEmbedder, reranker: weak }, '无关问题', [])
+    expect(rejected.noEvidence).toBe(true)
+    expect(rejected.clauses).toEqual([])
+
+    const accepted = await retrieveClauses({ db, embedder: fakeEmbedder, reranker: strong }, '塑料瓶', [])
+    expect(accepted.noEvidence).toBe(false)
+    expect(accepted.clauses[0].id).toBe('c1')
+  })
+
+  it('uses a stricter rerank threshold and a lower hybrid threshold', async () => {
+    const db = dbWithChunks()
+    const reranker = { rerank: async () => [{ index: 0, score: 0.5 }] }
+
+    const reranked = await retrieveClauses({ db, embedder: fakeEmbedder, reranker }, '塑料瓶', [])
+    expect(reranked.reranked).toBe(true)
+    expect(reranked.noEvidence).toBe(true)
+
+    const hybrid = await retrieveClauses({ db, embedder: fakeEmbedder }, '塑料瓶', [])
+    expect(hybrid.reranked).toBe(false)
+    expect(hybrid.noEvidence).toBe(false)
+  })
+
   it('fails closed when the reranker returns no results', async () => {
     const db = dbWithChunks()
     const reranker = { rerank: async () => [] }
