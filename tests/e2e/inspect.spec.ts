@@ -64,6 +64,12 @@ const planPayload = {
     { key: 'verify', title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
   ],
   tools: ['create_work_order'],
+  planningTrace: [{
+    tool: 'search_standards',
+    input: { query: '塑料类', categories: [] },
+    output: { noEvidence: false, clauses: [{}, {}] },
+    latencyMs: 120,
+  }],
   parsedBy: 'llm',
   estimatedSeconds: 5,
   estimatedCostCny: 0.02,
@@ -139,6 +145,7 @@ test('runs a mocked inspection and links evidence', async ({ page }) => {
   await expect(planDialog).toContainText('汇总与严重度')
   await expect(planDialog).toContainText('其他类别仍会识别并保留')
   await expect(planDialog).toContainText('额外工具：整改工单')
+  await expect(planDialog).toContainText('规划阶段工具')
   await expect(page.getByRole('button', { name: '计划已生成' })).toBeDisabled()
   await page.getByRole('button', { name: '开始巡检（确认执行计划）' }).click()
 

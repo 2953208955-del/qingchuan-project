@@ -84,6 +84,12 @@ describe('PlanConfirm', () => {
       { key: 'verify' as const, title: '校验与复核', detail: '校验数字、证据与引用；低置信目标进入人工复核' },
     ],
     tools: ['create_work_order'] as const,
+    planningTrace: [{
+      tool: 'search_standards',
+      input: { query: '塑料类', categories: [] },
+      output: { noEvidence: false, clauses: [{}, {}] },
+      latencyMs: 120,
+    }],
     parsedBy: 'llm' as const,
     estimatedSeconds: 10,
     estimatedCostCny: 0.04,
@@ -97,6 +103,8 @@ describe('PlanConfirm', () => {
     expect(screen.getByText(/重点关注：塑料瓶、泡沫塑料/)).toBeInTheDocument()
     expect(screen.getByText(/其他类别仍会识别并保留，供人工复核/)).toBeInTheDocument()
     expect(screen.getByText(/额外工具：整改工单/)).toBeInTheDocument()
+    expect(screen.getByText(/规划阶段工具/)).toBeInTheDocument()
+    expect(screen.getByText(/2 条条款/)).toBeInTheDocument()
     for (const title of ['识别图片', '汇总与严重度', '检索标准条款', '起草报告', '校验与复核']) {
       expect(screen.getByText(title)).toBeInTheDocument()
     }
@@ -107,7 +115,7 @@ describe('PlanConfirm', () => {
   it('labels the heuristic fallback honestly', () => {
     render(
       <PlanConfirm
-        plan={{ ...plan, focusCategories: [], tools: [], parsedBy: 'heuristic' }}
+        plan={{ ...plan, focusCategories: [], tools: [], planningTrace: [], parsedBy: 'heuristic' }}
         onConfirm={() => {}}
         onCancel={() => {}}
       />,

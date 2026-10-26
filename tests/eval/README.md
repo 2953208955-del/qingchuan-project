@@ -43,6 +43,16 @@
   不在同一尺度。结果会记录 `rerankThreshold`、`hybridThreshold`、`rerankerFallbacks`
   与每题分数，便于审计。这批指标属于自建小样本自查，不能当作公开基准。
 
+### `rag-questions-heldout.json`
+
+- 与校准集同 schema，当前 32 题（22 道可答 + 10 道近义干扰/无答案）。
+- **阈值在运行前固定，禁止用这批题调阈值或改语料。** 它用于暴露校准集上的过拟合。
+- 运行方式：`npm run eval:rag:heldout`，结果写入 `ragHeldout` 段。
+- 当前真实结果：Recall@5 1.00、Recall@3 1.00、MRR 0.977、无答案准确率 **0.30**。
+  负向结果说明：问题点名一个标准、但答案只存在于另一标准时，当前检索会返回
+  “别的标准”的条款；下一步应做来源约束，并在**新的** held-out 集上验证，而不是
+  在这批题上调阈值。
+
 ### `detection-fixtures.json`
 
 ```json
@@ -107,8 +117,11 @@
 # 检测：先按上文补齐真实标注
 npm run eval:detection
 
-# RAG：先 npm run ingest 并配置 DASHSCOPE_API_KEY
+# RAG 校准集：先 npm run ingest 并配置 DASHSCOPE_API_KEY
 npm run eval:rag
+
+# RAG held-out：阈值固定后运行，不用于调参
+npm run eval:rag:heldout
 
 # Agent：配置 DASHSCOPE_API_KEY 且准备 public/samples/sample-1.jpg
 npm run eval:agent

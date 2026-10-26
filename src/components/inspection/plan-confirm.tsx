@@ -2,6 +2,15 @@
 
 import { CATEGORY_LABELS, OPTIONAL_TOOL_LABELS, type Plan } from '@/lib/domain/schemas'
 
+function traceSummary(output: unknown): string {
+  if (output === null || typeof output !== 'object') return ''
+  const record = output as Record<string, unknown>
+  if (record.noEvidence === true) return ' → 知识库未找到依据'
+  if (Array.isArray(record.clauses)) return ` → ${record.clauses.length} 条条款`
+  if (typeof record.error === 'string') return ` → ${record.error}`
+  return ''
+}
+
 export function PlanConfirm({ plan, onConfirm, onCancel, disabled = false }: {
   plan: Plan
   onConfirm: () => void
@@ -24,6 +33,18 @@ export function PlanConfirm({ plan, onConfirm, onCancel, disabled = false }: {
         <p className="plan-confirm__line">
           额外工具：{plan.tools.map(tool => OPTIONAL_TOOL_LABELS[tool]).join('、')}（mock）
         </p>
+      )}
+      {plan.planningTrace.length > 0 && (
+        <div className="plan-confirm__trace">
+          <p className="plan-confirm__line">规划阶段工具：</p>
+          <ul>
+            {plan.planningTrace.map((item, index) => (
+              <li key={`${item.tool}-${index}`}>
+                {item.tool}{traceSummary(item.output)}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {plan.steps.length > 0 && (
         <ol className="plan-confirm__steps" aria-label="执行步骤">
