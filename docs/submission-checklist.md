@@ -7,18 +7,20 @@
 
 - 分支：`master`（最新提交见 `git log -1`）；未配置 remote、未推送、未建 tag。
 - 质量门：`npm run lint` 0 error（1 个 `<img>` warning）、`typecheck`、`build` 通过；
-  `npm test` **398 tests / 53 files** 全绿；Playwright E2E **7/7**。
+  `npm test` **407 tests / 55 files** 全绿；Playwright E2E **7/7**。
 - 真实评测（`data/eval/results.json`，2026-10-26）：
   - RAG 校准集 60 题：Recall@5 1.00、Recall@3 1.00、MRR 0.94、无答案 1.00
-  - RAG held-out 32 题：Recall@5 1.00、Recall@3 1.00、MRR 0.977、**无答案 0.30**
+  - RAG held-out（修复前）32 题：Recall@5 1.00、Recall@3 1.00、MRR 0.977、**无答案 0.30**
+  - RAG source-scoped held-out（新题）30 题：Recall@5 0.95、Recall@3 0.95、MRR 0.925、**无答案 1.00**
   - Agent 4/4（单次运行，2026-10-24）
   - 检测 P 0.78 / R 0.50 / F1 0.61（10 张 NOAA 单目标裁片、人工 GT、IoU ≥ 0.5）
 - 已实现并实测：确定性编排、VLM/检索/报告/Verifier、Planner Function Calling 检索、
+  in-memory MCP 客户端调用 `search_standards`、source-scoped retrieval、
   可选工具执行与审计、低置信复核 → 重新生成 → 导出闭环、三向证据联动、
   日预算/限流/图片上限、原子 claim、注入防御、上传隐私同意与 EXIF/GPS 剥离。
 - 已知局限（必须在视频/PDF 中如实说明）：
-  - held-out 近义拒答仅 0.30：问题点名一个标准、答案只在另一标准时会跨标准取条款；
-    **不要在这批 held-out 上调阈值**，后续 source-scoping 需另建新 held-out。
+  - 旧 held-out 近义拒答 0.30 是修复前基线；source-scoped 新 held-out 已到无答案 1.00，
+    但可答 Recall@5 0.95，仍有 1 题 miss；不要回头调这批新 held-out，后续修复另建新集。
   - 检测评测是小样本自查（10 张单目标裁片、人工粗框），不是大规模基准；
   - Agent 评测是单次运行，模型输出有随机性；工具仍是 mock；
   - `sample-3.jpg` 目前是 NOAA 图库的 220×220 缩略图；

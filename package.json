@@ -19,6 +19,7 @@
     "eval:detection": "tsx scripts/eval-detection.ts",
     "eval:rag": "tsx scripts/eval-rag.ts",
     "eval:rag:heldout": "tsx scripts/eval-rag.ts --heldout",
+    "eval:rag:scoped": "tsx scripts/eval-rag.ts --scoped",
     "eval:agent": "tsx scripts/eval-agent.ts"
   },
   "dependencies": {

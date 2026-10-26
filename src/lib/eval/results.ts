@@ -7,7 +7,7 @@ export function round(value: number): number {
   return Math.round(value * 1e6) / 1e6
 }
 
-export type EvalSection = 'detection' | 'rag' | 'ragHeldout' | 'agent'
+export type EvalSection = 'detection' | 'rag' | 'ragHeldout' | 'ragScoped' | 'agent'
 
 export type ResultsDocument = {
   generatedAt?: string
