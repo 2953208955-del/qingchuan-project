@@ -89,9 +89,19 @@ export const ReportDraft = z.object({
 })
 export type ReportDraft = z.infer<typeof ReportDraft>
 
+export const PlanStep = z.object({
+  key: z.enum(['analyze', 'aggregate', 'retrieve', 'draft', 'verify']),
+  title: z.string(),
+  detail: z.string(),
+})
+export type PlanStep = z.infer<typeof PlanStep>
+
 export const Plan = z.object({
   imageCount: z.number().int().positive(),
   focusCategories: z.array(DebrisCategory).default([]),
+  intentSummary: z.string().default(''),
+  steps: z.array(PlanStep).default([]),
+  parsedBy: z.enum(['llm', 'heuristic']).default('heuristic'),
   estimatedSeconds: z.number().positive(),
   estimatedCostCny: z.number().nonnegative(),
   output: z.literal('inspection_report'),
@@ -99,7 +109,7 @@ export const Plan = z.object({
 export type Plan = z.infer<typeof Plan>
 
 export const RunStatus = z.enum([
-  'idle', 'planned', 'analyzing', 'aggregating', 'retrieving',
+  'idle', 'planning', 'planned', 'analyzing', 'aggregating', 'retrieving',
   'drafting', 'verifying', 'awaiting_review', 'completed', 'failed', 'stale',
 ])
 export type RunStatus = z.infer<typeof RunStatus>

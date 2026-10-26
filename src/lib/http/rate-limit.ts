@@ -3,6 +3,7 @@
 // the allowance for analysis or knowledge search.
 export const RATE_LIMITS = {
   runs: { limit: 10, windowMs: 60_000 },
+  plan: { limit: 6, windowMs: 60_000 },
   analyze: { limit: 3, windowMs: 60_000 },
   regenerate: { limit: 3, windowMs: 60_000 },
   knowledgeSearch: { limit: 20, windowMs: 60_000 },

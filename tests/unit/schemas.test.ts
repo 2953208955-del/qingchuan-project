@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Detection, ReportClaim, ReportDraft } from '@/lib/domain/schemas'
+import { Detection, Plan, ReportClaim, ReportDraft } from '@/lib/domain/schemas'
 
 describe('domain schemas', () => {
   it('accepts a valid detection', () => {
@@ -21,6 +21,18 @@ describe('domain schemas', () => {
 
   it('requires every claim to carry evidence', () => {
     expect(() => ReportClaim.parse({ id: 'c1', section: 'summary', text: '发现塑料瓶', evidenceIds: [] })).toThrow()
+  })
+
+  it('accepts legacy plan payloads with defaults for new fields', () => {
+    const plan = Plan.parse({
+      imageCount: 1, estimatedSeconds: 5, estimatedCostCny: 0.02,
+      output: 'inspection_report',
+    })
+
+    expect(plan.focusCategories).toEqual([])
+    expect(plan.intentSummary).toBe('')
+    expect(plan.steps).toEqual([])
+    expect(plan.parsedBy).toBe('heuristic')
   })
 
   it('parses a complete report', () => {

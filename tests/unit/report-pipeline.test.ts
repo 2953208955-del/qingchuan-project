@@ -86,6 +86,29 @@ describe('finalizeReport', () => {
     expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['plastic_bottle'])
   })
 
+  it('retrieves clauses for the union of focus and detected categories', async () => {
+    const { db, run } = setup(['plastic_bottle'])
+    const retrieve = retrieval()
+
+    await finalizeReport({
+      db,
+      repo,
+      run,
+      detections: [
+        detection({ id: 'd1', category: 'plastic_bottle', confidence: 0.9, reviewStatus: 'confirmed' }),
+        detection({ id: 'd2', category: 'glass', confidence: 0.9, reviewStatus: 'confirmed' }),
+      ],
+      analyzedImageCount: 1,
+      retrieval: retrieve,
+      reporter: reporter(),
+      verifier: passingVerifier,
+      now: () => new Date('2026-10-22T00:00:00.000Z'),
+      budget: new BudgetTracker(1),
+    })
+
+    expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['plastic_bottle', 'glass'])
+  })
+
   it('keeps the run awaiting review and the report needs_review while a low-confidence item is pending', async () => {
     const { db, run } = setup()
 
@@ -135,7 +158,7 @@ describe('finalizeReport', () => {
     expect(stored.metrics.detectionCount).toBe(1)
   })
 
-  it('prefers focus categories over detected categories for retrieval', async () => {
+  it('unions focus categories with detected categories for retrieval', async () => {
     const { db, run } = setup(['foam'])
     const retrieve = retrieval()
 
@@ -152,7 +175,7 @@ describe('finalizeReport', () => {
       budget: new BudgetTracker(1),
     })
 
-    expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['foam'])
+    expect(retrieve.retrieve).toHaveBeenCalledWith('检查塑料', ['foam', 'plastic_bottle'])
   })
 
   it('persists aggregate/retrieve/draft/verify steps and the reporter prompt version', async () => {

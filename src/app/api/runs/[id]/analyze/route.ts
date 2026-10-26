@@ -60,9 +60,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     )
   }
 
-  // One tracker for the whole run: vision calls and report drafting both add
-  // to it, and the orchestrator persists its final spend.
-  const budget = new BudgetTracker(runBudgetFromEnv())
+  // One tracker for the whole run: planner, vision and report drafting all add
+  // to it, and the orchestrator persists its final spend. Seeding with the
+  // stored total keeps the plan call inside the same per-run cap.
+  const budget = new BudgetTracker(runBudgetFromEnv(), run.totalCostCny)
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({

@@ -75,10 +75,13 @@ export async function runInspection(runId: string, deps: OrchestratorDeps): Prom
 
     let costCny: number | null = null
     try {
+      // The instruction is a soft focus hint for the VLM. It never filters
+      // results: every detected category still reaches metrics and review.
+      const hint = [run.instruction, image.hint].filter(Boolean).join('\n').slice(0, 300)
       const result = await deps.vision.analyze({
         imagePath: image.path,
         focusCategories,
-        hint: image.hint ?? undefined,
+        hint: hint || undefined,
       })
       // Compute once so an abstained/invalid response still records its cost:
       // abstained results were billed tokens too.

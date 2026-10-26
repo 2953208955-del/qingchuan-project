@@ -116,7 +116,10 @@ export async function finalizeReport(input: FinalizeReportInput): Promise<Finali
   const retrieveStart = now().getTime()
   repo.updateRun(db, run.id, { status: 'retrieving' })
   const focusCategories = parseFocusCategories(run.focusCategories)
-  const categories = focusCategories.length > 0 ? focusCategories : detectedCategories(activeDetections)
+  // Focus categories are a soft hint. Retrieval still has to cover every
+  // category the VLM actually saw, otherwise a plastic-focused instruction
+  // could silently drop the fishing-gear clause a human must review.
+  const categories = [...new Set([...focusCategories, ...detectedCategories(activeDetections)])]
   let clauses: Clause[]
   try {
     ({ clauses } = await retrieval.retrieve(run.instruction, categories))

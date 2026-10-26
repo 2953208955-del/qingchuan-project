@@ -1,40 +1,48 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db/client'
-import { getRun, listImages } from '@/lib/db/repo'
-import { DebrisCategory, Plan } from '@/lib/domain/schemas'
+import { getRun } from '@/lib/db/repo'
+import { createPlanForRun } from '@/lib/agent/plan'
+import { DeepSeekInspectionPlanner } from '@/lib/agent/planner'
+import { BudgetTracker, dailyBudgetFromEnv, runBudgetFromEnv } from '@/lib/ai/budget'
+import { RATE_LIMITS, RateLimiter, clientKey } from '@/lib/http/rate-limit'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
-const CATEGORY_VALUES = new Set<string>(DebrisCategory.options)
+// Planning can make one paid text-model call; keep it on its own allowance.
+const planLimiter = new RateLimiter(RATE_LIMITS.plan.limit, RATE_LIMITS.plan.windowMs)
 
-// run.focusCategories is stored user input; malformed JSON or unknown values
-// must degrade to an empty/partial list rather than fail the plan request.
-function parseFocusCategories(raw: string | null): DebrisCategory[] {
-  if (!raw) return []
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((value): value is DebrisCategory => typeof value === 'string' && CATEGORY_VALUES.has(value))
-  } catch {
-    return []
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!planLimiter.check(clientKey(request))) {
+    return NextResponse.json(
+      { code: 'RATE_LIMITED', message: '生成计划请求过于频繁，请稍后再试', retryable: true },
+      { status: 429 },
+    )
   }
-}
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const db = getDb()
   const run = getRun(db, id)
-  if (!run) return NextResponse.json({ code: 'NOT_FOUND', message: '任务不存在', retryable: false }, { status: 404 })
-  const imageCount = listImages(db, id).length
-  if (imageCount === 0) return NextResponse.json({ code: 'NO_IMAGES', message: '没有可分析的图片', retryable: false }, { status: 400 })
-  const plan = Plan.parse({
-    imageCount,
-    focusCategories: parseFocusCategories(run.focusCategories),
-    // Rough planning estimates only (5s and ¥0.02 per image); actual latency
-    // and cost come from the run's recorded steps.
-    estimatedSeconds: imageCount * 5,
-    estimatedCostCny: Number((imageCount * 0.02).toFixed(2)),
-    output: 'inspection_report',
+  if (!run) {
+    return NextResponse.json({ code: 'NOT_FOUND', message: '任务不存在', retryable: false }, { status: 404 })
+  }
+
+  // Seed with the run's persisted spend so a plan call counts against the same
+  // per-run cap that the later analysis uses.
+  const budget = new BudgetTracker(runBudgetFromEnv(), run.totalCostCny)
+  const planner = process.env.DEEPSEEK_API_KEY?.trim()
+    ? new DeepSeekInspectionPlanner({ budget })
+    : undefined
+
+  const outcome = await createPlanForRun(db, id, {
+    planner,
+    budget,
+    dailyBudgetCny: dailyBudgetFromEnv(),
   })
-  return NextResponse.json(plan)
+
+  if (outcome.ok) return NextResponse.json(outcome.plan)
+  return NextResponse.json(
+    { code: outcome.code, message: outcome.message, retryable: false },
+    { status: outcome.status },
+  )
 }
