@@ -6,6 +6,7 @@ import imageCompression from 'browser-image-compression'
 import { useInspectionStore } from '@/stores/inspection-store'
 import { MAX_IMAGES_PER_RUN } from '@/lib/domain/limits'
 import type { UploadedImage } from '@/lib/domain/schemas'
+import { createClientId } from '@/lib/utils/uid'
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -78,8 +79,9 @@ export function UploadDropzone({ disabled = false, onBusyChange }: {
           failures.push(`${file.name}：${invalid}`)
         } else {
           // Generated outside the upload try so an ID failure is never
-          // misreported as a failed upload.
-          const id = crypto.randomUUID()
+          // misreported as a failed upload. createClientId also covers
+          // non-secure origins where crypto.randomUUID is unavailable.
+          const id = createClientId()
           try {
             const data = await uploadOne(file)
             uploaded.push({
