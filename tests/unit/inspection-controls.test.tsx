@@ -53,6 +53,27 @@ describe('UploadDropzone', () => {
     expect(zone).not.toHaveAttribute('data-drag-active')
   })
 
+  it('uploads a dropped file when randomUUID is missing on a non-secure origin', async () => {
+    // A LAN-IP dev server (plain http://192.168.x.x) exposes getRandomValues
+    // but not randomUUID; dropping a file must still work there.
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ filename: 'lan.png', path: 'data/uploads/lan.png', sha256: 'def' }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('crypto', {
+      getRandomValues: (array: Uint8Array) => array.fill(1),
+    })
+    const file = new File(['lan'], 'lan.png', { type: 'image/png' })
+    const { container } = render(<UploadDropzone />)
+    const zone = container.querySelector('.upload-zone') as HTMLElement
+
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+
+    await waitFor(() => expect(useInspectionStore.getState().images).toHaveLength(1))
+    expect(useInspectionStore.getState().images[0].filename).toBe('lan.png')
+  })
+
   it('ignores drops while disabled', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
