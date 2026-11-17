@@ -1,4 +1,4 @@
-# 清川 · 河湖垃圾多模态巡检 Agent
+# 清川河湖垃圾智能巡检系统 V1.0
 
 清川是一个 AI Native 的河湖垃圾巡检 Web 应用。巡查人员上传手机或无人机照片、用一句话说明任务，Agent 自动完成识别分类、计数与严重度评估、标准条款溯源、巡检报告生成、人工复核与 PDF 导出。
 
@@ -22,7 +22,25 @@
 
 ## 功能截图
 
-> 待补充：巡检时间线、证据面板、复核队列、报告页与评测页截图。
+### 总览大屏
+
+![总览大屏](docs/screenshots/01-dashboard.jpg)
+
+### 巡检工作台
+
+![巡检工作台](docs/screenshots/02-inspect.jpg)
+
+### 报告库与报告详情
+
+![报告库](docs/screenshots/03-reports.jpg)
+
+![报告详情](docs/screenshots/04-report.jpg)
+
+### 知识库与评测中心
+
+![知识库](docs/screenshots/05-knowledge.jpg)
+
+![评测中心](docs/screenshots/06-eval.jpg)
 
 ## 技术架构
 
@@ -182,23 +200,24 @@ Windows PowerShell 可使用 `$env:DATA_DIR="./data"` 等形式逐个设置变�
 - API Key 只保存在服务器的 `.env` 中，权限 600，不进入 Git；演示样例图需登记来源与许可证。
 - 删除 `DATA_DIR/uploads` 与对应 SQLite 记录即可移除本地数据；第三方云端请求需按服务商控制台处理。
 
-## 提交状态（2026-10-26）
+## 提交状态（2026-10-29）
 
 - 本地分支见 `git branch --show-current`；未配置 remote、未推送、未建 tag（最新提交见 `git log -1`）。
-- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**55 文件 / 407 单测**、Playwright **7/7** 全绿。
+- 质量门：lint 0 error（1 个既有 `<img>` 警告）、typecheck、build 通过；**56 文件 / 409 单测**、Playwright **7/7** 全绿。
+- 局域网（非安全上下文）上传已修复：`createClientId()` 在 `crypto.randomUUID` 不可用时回退 `getRandomValues`，单测与 Chromium 实测通过。
 - 任务解析：DeepSeek Planner + Function Calling 检索工具 + 关键词回退；规划阶段可真实调用 `search_standards` 并展示/持久化调用轨迹；五步计划可确认；关注类别为软提示，检索使用“关注类别 ∪ 实际检出类别”。
 - 可选工具：Planner 按指令选择 `get_river_profile` / `create_work_order`，orchestrator 真实执行并写入 `agent_steps` 与时间线；MCP Server 复用同一工具实现。
 - 规划期 Function Calling + MCP：Planner 通过 in-memory MCP 客户端调用 MCP `search_standards`（协议真实走通，失败回退本地检索）；trace 记录 `via` / `scope`，写入 `planningTrace` / `planJson` 并在计划面板展示。
 - source-scoped retrieval：问题点名 `CJJ/T 174-2013`、`DB31/T 1639-2025`、`GB/T 19095-2019` 或 `清川SOP` 时，检索只在该标准内进行；旧 held-out 的近义拒答 0.30 → 新 scoped held-out 1.00。
 - 真实评测：RAG 校准集 **60 题** Recall@5 **1.00** / Recall@3 **1.00** / MRR **0.94** / 无答案 **1.00**；held-out（修复前）**32 题** Recall@5 **1.00** / MRR **0.977** / 无答案 **0.30**；source-scoped held-out（新题）**30 题** Recall@5 **0.95** / Recall@3 **0.95** / MRR **0.925** / 无答案 **1.00**；Agent **4/4**（单次运行）；检测 **P 0.78 / R 0.50 / F1 0.61**（10 张 NOAA 单目标裁片，人工 GT）。
-- 待完成：5–8 分钟视频、≤30 页 PDF、公开仓库与演示地址、团队信息；11/14 冻结后再建 tag。
+- 完整技术文档见 docs，运行与部署步骤见下方。
 - 详见 [提交检查清单](docs/submission-checklist.md)。
 
 ## 团队
 
-| 角色 | 成员 | 分工 |
+| 成员 | 学校 | 联系方式 |
 | --- | --- | --- |
-| 待补充（提交前填写） | 待补充（提交前填写） | 待补充（提交前填写） |
+| 熊斯琦 | 上海海洋大学 | 2953208955@qq.com |
 
 ## 文档
 

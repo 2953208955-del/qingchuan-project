@@ -32,6 +32,8 @@ export function ReportSections({
   mode: 'page' | 'print'
 }) {
   const printable = mode === 'print'
+  const analyzed = images.filter(image => image.status === 'analyzed').length
+  const failed = images.filter(image => image.status === 'failed').length
 
   return (
     <>
@@ -43,6 +45,14 @@ export function ReportSections({
         printHref={printable ? undefined : `/reports/${runId}/print`}
         showExport={!printable}
       />
+
+      {images.length > 0 && (
+        <section aria-label="分析覆盖" className="report-section">
+          <h2 className="report-section__title">分析覆盖</h2>
+          <p>提交 {images.length} 张，成功分析 {analyzed} 张，无法判定 {failed} 张。</p>
+          {failed > 0 && <p>报告统计基于成功分析的照片。无法判定的照片需要补查。</p>}
+        </section>
+      )}
 
       {!printable && (
         <ReportReviewPanel

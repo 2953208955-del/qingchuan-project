@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "清川 · 河湖垃圾智能巡检系统",
+  title: "清川河湖垃圾智能巡检系统 V1.0",
   description: "拍照即巡检，证据可追溯：可审计的河湖垃圾多模态巡检 Agent",
 };
 
@@ -32,8 +32,12 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable}`}
+      // Phone browsers and extensions (dark mode, translate, in-app webviews)
+      // may add attributes to <html>/<body> before React hydrates. Those are
+      // environment changes, not render mismatches, so don't warn about them.
+      suppressHydrationWarning
     >
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>

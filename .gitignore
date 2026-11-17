@@ -53,3 +53,9 @@ data/eval/*
 !data/eval/results.json
 .playwright/
 test-results/
+
+# Local evaluation downloads and administrative documents
+/清川 FloatWaste 评测集/
+/docs/copyright/
+.env.*
+!.env.example

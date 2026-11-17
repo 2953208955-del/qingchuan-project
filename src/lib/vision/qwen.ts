@@ -66,6 +66,7 @@ export class QwenVisionAnalyzer implements VisionPort {
     apiKey: string
     model: string
     fetchImpl?: typeof fetch
+    systemPrompt?: string
   }) {}
 
   async analyze(input: { imagePath: string; focusCategories?: string[]; hint?: string }): Promise<VisionResult> {
@@ -104,7 +105,7 @@ export class QwenVisionAnalyzer implements VisionPort {
             // {"x":0.43,0.12,0.65,0.22} (observed without it).
             response_format: { type: 'json_object' },
             messages: [
-              { role: 'system', content: VISION_PROMPT },
+              { role: 'system', content: this.opts.systemPrompt ?? VISION_PROMPT },
               { role: 'user', content: [
                 { type: 'text', text: `请分析这张巡检图片。${hint}` },
                 { type: 'image_url', image_url: { url: dataUrl } },

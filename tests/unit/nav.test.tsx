@@ -55,7 +55,7 @@ describe('AppShell', () => {
     )
     expect(screen.getByText('页面内容')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '巡检工作台' })).toHaveAttribute('href', '/inspect')
-    expect(screen.getByText('河湖垃圾智能巡检系统')).toBeInTheDocument()
+    expect(screen.getByText('河湖垃圾智能巡检系统 V1.0')).toBeInTheDocument()
   })
 })
 
@@ -63,7 +63,7 @@ describe('HoloTopBar', () => {
   it('renders the product title and local runtime label', () => {
     render(<HoloTopBar />)
     expect(screen.getByText('清川')).toBeInTheDocument()
-    expect(screen.getByText('河湖垃圾智能巡检系统')).toBeInTheDocument()
+    expect(screen.getByText('河湖垃圾智能巡检系统 V1.0')).toBeInTheDocument()
     expect(screen.getByText('本地运行')).toBeInTheDocument()
   })
 })

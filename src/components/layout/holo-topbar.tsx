@@ -33,7 +33,7 @@ export function HoloTopBar() {
       </div>
 
       <div className="holo-topbar__identity">
-        <p className="holo-topbar__title">河湖垃圾智能巡检系统</p>
+        <p className="holo-topbar__title">河湖垃圾智能巡检系统 V1.0</p>
         <span className="holo-topbar__caption" aria-hidden="true">
           RIVER · LAKE · INSPECTION
         </span>
